@@ -294,6 +294,113 @@
     border-bottom-width:3px; border-radius:6px; padding:8px 16px; cursor:pointer; letter-spacing:1px;
   }
   #prologueSkip:hover{ color:var(--torch); }
+
+  /* ===================== v18: 나무+금 픽셀 UI (마을 대화창·상점과 같은 톤) ===================== */
+  /* 타이틀/프롤로그 뒤 픽셀 배경 캔버스 */
+  .pxbg{ position:absolute; inset:0; width:100%; height:100%; z-index:0; display:block;
+    image-rendering:pixelated; background:#07060c; pointer-events:none; }
+  #title{ background:#07060c; }
+  #title > :not(.pxbg){ position:relative; z-index:1; }
+  #prologue .pxbg{ opacity:.6; }
+  #prologueText{ position:relative; z-index:1; }
+  #prologueSkip{ z-index:2; }
+  /* 나무 테 + 금 리벳 (uiPanel의 CSS 판) */
+  .wood{
+    background:#1c1411; border:3px solid #6b4127; border-top-color:#9a6a3e; border-bottom-color:#3d2416;
+    border-radius:0; box-shadow:0 0 0 2px #120b08, inset 0 0 0 1px #120b08, 0 12px 32px rgba(0,0,0,.65);
+  }
+  .wood::after, button.wb::after{
+    content:""; position:absolute; inset:-3px; pointer-events:none;
+    background:
+      linear-gradient(#fff0b8,#fff0b8) 0 0/2px 2px no-repeat,
+      linear-gradient(#fff0b8,#fff0b8) calc(100% - 2px) 0/2px 2px no-repeat,
+      linear-gradient(#fff0b8,#fff0b8) 0 calc(100% - 2px)/2px 2px no-repeat,
+      linear-gradient(#fff0b8,#fff0b8) calc(100% - 2px) calc(100% - 2px)/2px 2px no-repeat,
+      linear-gradient(#e2b553,#e2b553) 0 0/4px 4px no-repeat,
+      linear-gradient(#e2b553,#e2b553) 100% 0/4px 4px no-repeat,
+      linear-gradient(#e2b553,#e2b553) 0 100%/4px 4px no-repeat,
+      linear-gradient(#e2b553,#e2b553) 100% 100%/4px 4px no-repeat;
+  }
+  /* 나무 버튼 */
+  button.wb{
+    position:relative; margin:0; font-family:var(--pixel); letter-spacing:1px; text-shadow:0 1px 0 #120b08;
+    color:#ffe6a0; background:#2a1c13; border:3px solid #6b4127; border-top-color:#9a6a3e; border-bottom-color:#3d2416;
+    border-radius:0; box-shadow:0 0 0 2px #120b08, 0 4px 0 2px #0a0604; padding:10px 20px; font-size:14px;
+  }
+  button.wb:hover{ background:#3a2616; color:#fff0b8; }
+  button.wb:active{ transform:translateY(2px); box-shadow:0 0 0 2px #120b08, 0 2px 0 2px #0a0604; border-bottom-width:3px; }
+  button.wb.gold{ background:#4a2c18; border-color:#e2b553; border-top-color:#fff0b8; border-bottom-color:#a87a2a; color:#ffd24a; font-size:16px; padding:12px 26px; }
+  button.wb.gold:hover{ background:#5a3820; color:#fff0b8; }
+  button.wb.small{ font-size:12px; padding:7px 14px; color:#cfc7bb; }
+  button.wb.small:hover{ color:#ffe6a0; }
+  button.wb:disabled{ opacity:.7; cursor:default; }
+  #startBtn.wb{ animation:pulseGold 2s ease-in-out infinite; }
+  @keyframes pulseGold{
+    0%,100%{ box-shadow:0 0 0 2px #120b08, 0 4px 0 2px #0a0604, 0 0 0 rgba(255,210,74,0); }
+    50%{ box-shadow:0 0 0 2px #120b08, 0 4px 0 2px #0a0604, 0 0 20px rgba(255,210,74,.5); }
+  }
+  #continueBtn.wb{ color:#ffe6a0; }
+  /* 타이틀 로고: 금빛 픽셀 그림자 */
+  #titleH1{ color:#ffe6a0; text-shadow:0 0 14px rgba(255,154,60,.55), 3px 3px 0 #3d2416, -1px -1px 0 #120b08, 1px -1px 0 #120b08, -1px 1px 0 #120b08; }
+  .tagline{ color:#d8c8a0; text-shadow:1px 1px 0 #000; }
+  .manual.wood{ position:relative; color:#b8ac94; border-radius:0; }
+  .manual hr{ border-top-color:#3d2416; }
+  .manual .key{ background:#2a1c13; border-color:#6b4127; border-bottom-color:#3d2416; color:#ffe6a0; border-radius:0; }
+  /* 닉네임 / 리더보드 박스 */
+  #nickBox.wood, #lbBox.wood{ border-radius:0; background:rgba(28,20,17,.94); }
+  #nickBox .lbl, #lbBox .lbTitle{ color:#ffd24a; text-shadow:1px 1px 0 #120b08; }
+  #nickInput{ background:#120b08; border:2px solid #4a3424; border-radius:0; color:#ffe6a0; }
+  #nickInput:focus{ border-color:#e2b553; }
+  #nickSave.wb{ margin:0 0 0 6px; padding:5px 10px; font-size:11px; }
+  .lbTabs button{ background:#16100d; border:2px solid #3d2416; border-radius:0; color:#9a8a70; }
+  .lbTabs button.on{ background:#3a2a16; color:#ffd24a; border-color:#e2b553; }
+  #lbList li{ border-radius:0; }
+  #lbList li:nth-child(odd){ background:rgba(255,220,150,.04); }
+  #lbList li.me{ background:rgba(226,181,83,.18); }
+  #lbList .nm{ color:#e0d4bc; }
+  #lbList .vl{ color:#ffd24a; }
+  /* 좁은 화면(폰): 리더보드는 접힌 버튼 → 탭하면 펼침 (로고를 가리지 않게) */
+  @media (max-width:700px), (max-height:500px){
+    #lbBox{ width:auto; padding:6px 10px; }
+    #lbBox .lbTitle{ margin:0; cursor:pointer; user-select:none; -webkit-user-select:none; }
+    #lbBox .lbTitle::after{ content:" ▾"; color:#e2b553; }
+    #lbBox.open .lbTitle{ margin-bottom:6px; }
+    #lbBox.open .lbTitle::after{ content:" ▴"; }
+    #lbBox:not(.open) .lbTabs, #lbBox:not(.open) #lbList, #lbBox:not(.open) #lbStatus{ display:none; }
+    #lbBox.open{ width:240px; max-width:84vw; }
+    #nickBox{ padding:6px 8px; }
+    #nickInput{ width:96px; }
+  }
+
+  /* 사망 / 승리 카드 */
+  #over{ background:radial-gradient(ellipse at center, rgba(14,6,10,.55) 0%, rgba(40,6,12,.86) 55%, rgba(110,10,22,.95) 100%);
+    animation:overIn .9s ease-out both; }
+  #win{ background:radial-gradient(ellipse at center, rgba(40,28,10,.6) 0%, rgba(14,10,8,.9) 60%, rgba(5,5,7,.97) 100%);
+    animation:overIn .9s ease-out both; }
+  @keyframes overIn{ 0%{ opacity:0; } 100%{ opacity:1; } }
+  .card{ position:relative; width:min(92vw,380px); padding:20px 18px 18px; display:flex; flex-direction:column;
+    align-items:center; gap:12px; animation:cardIn .6s cubic-bezier(.22,1.3,.36,1) .25s both; }
+  @keyframes cardIn{ 0%{ opacity:0; transform:translateY(18px) scale(.96); } 100%{ opacity:1; transform:none; } }
+  .card h1{ font-size:30px; }
+  .card .sub{ font-size:13px; color:#d8c8a0; line-height:1.6; }
+  .card .cause{ display:flex; align-items:center; justify-content:center; gap:8px; font-size:12px; color:#ff8a94; min-height:16px; }
+  .card .cause:has(#overCause:empty){ display:none; }
+  .stats{ display:grid; grid-template-columns:1fr 1fr; gap:8px; width:100%; }
+  .stat{ display:flex; align-items:center; gap:9px; padding:7px 9px; text-align:left;
+    background:#140d0a; border:2px solid #3d2416; box-shadow:inset 0 2px 0 rgba(0,0,0,.45); }
+  .stat .lb{ display:block; font-size:10px; color:#9a8a70; }
+  .stat b{ display:block; font-size:15px; color:#ffe6a0; font-weight:normal; }
+  img.pxi{ width:16px; height:16px; image-rendering:pixelated; flex:none; }
+  .card .flavor{ font-size:12px; color:#8a7a62; }
+  /* 가로 폰 등 낮은 화면: 카드를 낮고 넓게(신기록 토스트와 겹치지 않게 위쪽 정렬) */
+  @media (max-height:500px){
+    #over, #win{ justify-content:flex-start; padding-top:14px; }
+    .card{ width:min(94vw,600px); padding:12px 16px 14px; gap:8px; }
+    .card h1{ font-size:24px; }
+    .stats{ grid-template-columns:repeat(4,1fr); }
+    .stat{ padding:5px 7px; gap:6px; }
+    .stat b{ font-size:13px; }
+  }
 </style>
 </head>
 <body>
@@ -311,12 +418,13 @@
 
     <!-- TITLE -->
     <div class="panel" id="title">
+      <canvas id="titleBg" class="pxbg"></canvas>
       <h1 id="titleH1">FALLEN MEMOIR</h1>
       <div id="titleBody">
         <p class="tagline">꺼져가는 잿불을 들고, 먼저 내려간 이를 찾아 심연으로.</p>
 
-        <button class="ghost" id="manualToggle">📖 설명서 펼치기 ▾</button>
-        <div class="manual hidden" id="manual">
+        <button class="ghost wb small" id="manualToggle">📖 설명서 펼치기 ▾</button>
+        <div class="manual wood hidden" id="manual">
           <div class="mrow"><span class="mk"><span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> / <span class="key">↑</span><span class="key">←</span><span class="key">↓</span><span class="key">→</span></span><span class="md">이동</span></div>
           <div class="mrow"><span class="mk"><span class="key">SPACE</span></span><span class="md">공격 (이동하며 가능)</span></div>
           <div class="mrow"><span class="mk"><span class="key">Q</span> / 좌+우클릭</span><span class="md">강력한 공격 (게이지 가득 시)</span></div>
@@ -333,40 +441,51 @@
         </div>
 
         <div class="btnrow">
-          <button id="continueBtn" class="hidden">▶ CONTINUE</button>
-          <button id="startBtn">PRESS START</button>
-          <button class="admin" id="adminBtn">🔒 관리자 권한</button>
-          <button class="admin" id="resetBtn">🗑 기록 초기화</button>
+          <button id="continueBtn" class="wb hidden">▶ CONTINUE</button>
+          <button id="startBtn" class="wb gold">PRESS START</button>
+          <button class="admin wb small" id="adminBtn">🔒 관리자 권한</button>
+          <button class="admin wb small" id="resetBtn">🗑 기록 초기화</button>
         </div>
       </div>
     </div>
 
     <!-- v6: 프롤로그 (타이핑 인트로) -->
     <div id="prologue">
+      <canvas id="prologueBg" class="pxbg"></canvas>
       <p id="prologueText"></p>
       <button id="prologueSkip">건너뛰기 ▸</button>
     </div>
 
     <!-- GAME OVER -->
     <div class="panel hidden" id="over">
-      <h1 style="color:#e8344e; text-shadow:0 0 14px #8a1020, 3px 3px 0 #2a0808;">YOU DIED</h1>
-      <div class="hint">
-        지하 <b style="color:var(--torch)" id="overDepth">1</b>층에서 쓰러졌다.<br>
-        <span id="overCause" style="display:block"></span>
-        최종 점수 <b style="color:var(--torch)" id="overScore">0</b><br>
-        어둠은 다시 너를 기다린다…
+      <div class="card wood">
+        <h1 style="color:#e8344e; text-shadow:0 0 14px #8a1020, 3px 3px 0 #2a0808;">YOU DIED</h1>
+        <div class="sub">횃불이 꺼지고, 심연의 어둠 속에서 쓰러졌다.</div>
+        <div class="cause"><img class="pxi" data-ic="heart" alt=""><span id="overCause" style="display:block"></span></div>
+        <div class="stats">
+          <div class="stat"><img class="pxi" data-ic="stairs" alt=""><div><span class="lb">도달 층</span><b>지하 <span id="overDepth">1</span>층</b></div></div>
+          <div class="stat"><img class="pxi" data-ic="skull" alt=""><div><span class="lb">처치</span><b id="overKills">0</b></div></div>
+          <div class="stat"><img class="pxi" data-ic="coin" alt=""><div><span class="lb">이번 탐험 코인</span><b id="overCoins">0</b></div></div>
+          <div class="stat"><img class="pxi" data-ic="star" alt=""><div><span class="lb">최종 점수</span><b id="overScore">0</b></div></div>
+        </div>
+        <div class="flavor">어둠은 다시 너를 기다린다…</div>
+        <button id="retryBtn" class="wb gold">다시 도전</button>
       </div>
-      <button id="retryBtn">다시 도전</button>
     </div>
 
     <!-- VICTORY -->
     <div class="panel hidden" id="win">
-      <h1 style="color:#ffd24a; text-shadow:0 0 18px #ff9a3c, 3px 3px 0 #4a3208;">ESCAPED!</h1>
-      <div class="hint">
-        심연의 군주를 쓰러뜨리고 어둠을 빠져나왔다.<br>
-        최종 점수 <b style="color:var(--torch)" id="winScore">0</b> · 도달 <b style="color:var(--torch)" id="winDepth">1</b>층
+      <div class="card wood">
+        <h1 style="color:#ffd24a; text-shadow:0 0 18px #ff9a3c, 3px 3px 0 #4a3208;">ESCAPED!</h1>
+        <div class="sub">심연의 군주를 쓰러뜨리고 어둠을 빠져나왔다.</div>
+        <div class="stats">
+          <div class="stat"><img class="pxi" data-ic="stairs" alt=""><div><span class="lb">도달 층</span><b>지하 <span id="winDepth">1</span>층</b></div></div>
+          <div class="stat"><img class="pxi" data-ic="skull" alt=""><div><span class="lb">처치</span><b id="winKills">0</b></div></div>
+          <div class="stat"><img class="pxi" data-ic="coin" alt=""><div><span class="lb">이번 탐험 코인</span><b id="winCoins">0</b></div></div>
+          <div class="stat"><img class="pxi" data-ic="star" alt=""><div><span class="lb">최종 점수</span><b id="winScore">0</b></div></div>
+        </div>
+        <button id="winBtn" class="wb gold">다시 도전</button>
       </div>
-      <button id="winBtn">다시 도전</button>
     </div>
 
     <!-- ADMIN PROMPT -->
@@ -385,15 +504,15 @@
     </div>
 
     <!-- v5: 닉네임 (시작화면 좌상단) -->
-    <div id="nickBox">
+    <div id="nickBox" class="wood">
       <span class="lbl">▸ 닉네임</span>
       <input id="nickInput" maxlength="12" placeholder="모험가" autocomplete="off">
-      <button id="nickSave">저장</button>
+      <button id="nickSave" class="wb small">저장</button>
       <div id="nickMsg"></div>
     </div>
 
     <!-- v5: 리더보드 (시작화면 우상단) -->
-    <div id="lbBox">
+    <div id="lbBox" class="wood">
       <div class="lbTitle">🏆 명예의 전당</div>
       <div class="lbTabs">
         <button data-cat="coins" class="on">💰 코인</button>
@@ -6550,8 +6669,9 @@ function curSlotKey(){
 }
 function drawSlotGrid(label, arr, cols, rows, gx, gy, slot, gap, region){
   // 라벨
-  if(label){ uctx.fillStyle="#cfc7bb"; uctx.font='8px "Galmuri7", monospace'; uctx.textAlign="left";
-    uctx.fillText(label, gx, gy-3); }
+  if(label){ uctx.font='8px "Galmuri7", monospace'; uctx.textAlign="left";
+    uctx.fillStyle="#1a100a"; uctx.fillText(label, gx+1, gy-2);
+    uctx.fillStyle="#e2b553"; uctx.fillText(label, gx+1, gy-3); }
   for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
     const i=r*cols+c; if(i>=arr.length) continue;
     const sx=gx+c*(slot+gap), sy=gy+r*(slot+gap);
@@ -6559,13 +6679,15 @@ function drawSlotGrid(label, arr, cols, rows, gx, gy, slot, gap, region){
     const sel=(invCur.region===region && invCur.idx===i);
     const equipped=(wkey && wkey===player.weapon);
     const isHot=(region==="hotbar");
-    // 슬롯 바탕(마크 음각 스타일)
-    uctx.fillStyle = sel ? "#5a5238" : "#8b8b8b";
-    uctx.fillRect(sx,sy,slot,slot);
-    uctx.fillStyle = sel ? "#6e633f" : "#9c9c9c"; uctx.fillRect(sx+1,sy+1,slot-2,slot-2);
-    uctx.fillStyle="#5a5a5a"; uctx.fillRect(sx+1,sy+1,slot-2,2); uctx.fillRect(sx+1,sy+1,2,slot-2); // 음각 위/좌
-    uctx.fillStyle="#c8c8c8"; uctx.fillRect(sx+1,sy+slot-3,slot-2,2); uctx.fillRect(sx+slot-3,sy+1,2,slot-2); // 양각 아래/우
-    if(sel){ uctx.strokeStyle="#ffd24a"; uctx.lineWidth=2; uctx.strokeRect(sx+1,sy+1,slot-2,slot-2); }
+    // v18: 슬롯 = 어두운 음각 나무칸 + 금 테두리(선택) / 밝은 나무 테(호버·드래그 대상)
+    const hov=!sel && !isMobile && heldPtr && heldPtr.x>=sx && heldPtr.x<sx+slot && heldPtr.y>=sy && heldPtr.y<sy+slot;
+    uctx.fillStyle="#0e0806"; uctx.fillRect(sx,sy,slot,slot);
+    uctx.fillStyle= sel ? "#e2b553" : hov ? "#9a6a3e" : (isHot ? "#5a3c26" : "#4a3424");
+    uctx.fillRect(sx+1,sy+1,slot-2,slot-2);
+    uctx.fillStyle= sel ? "#3a2a16" : hov ? "#2a1c13" : "#1a120d"; uctx.fillRect(sx+2,sy+2,slot-4,slot-4);
+    uctx.fillStyle="rgba(0,0,0,0.45)"; uctx.fillRect(sx+2,sy+2,slot-4,2); uctx.fillRect(sx+2,sy+4,2,slot-6);   // 음각 그림자(위/좌)
+    uctx.fillStyle= sel ? "rgba(255,230,160,0.16)" : "rgba(255,220,150,0.06)"; uctx.fillRect(sx+2,sy+slot-3,slot-4,1); // 아래 반사광
+    if(sel){ uctx.fillStyle="#fff0b8"; uctx.fillRect(sx+1,sy+1,1,1); uctx.fillRect(sx+slot-2,sy+1,1,1); uctx.fillRect(sx+1,sy+slot-2,1,1); uctx.fillRect(sx+slot-2,sy+slot-2,1,1); }
     if(wkey && WEAPONS[wkey]){
       // v3.5: 아이콘을 칸 정중앙에 균형있게 — 무기 몸체가 중앙을 지나도록 시작점을 좌하단으로 보정하고 대각(우상향)으로 그림
       uctx.save();
@@ -6575,8 +6697,8 @@ function drawSlotGrid(label, arr, cols, rows, gx, gy, slot, gap, region){
       uctx.restore();
       if(equipped){ uctx.fillStyle="#ffd24a"; uctx.fillRect(sx+slot-6,sy+3,3,3); }
     }
-    if(isHot){ uctx.fillStyle="#3a3a3a"; uctx.font='7px "Galmuri7", monospace';
-      uctx.fillText(((i+1)%10)+"", sx+2, sy+8); }
+    if(isHot){ uctx.fillStyle= sel ? "#ffd24a" : "#8a6e4a"; uctx.font='7px "Galmuri7", monospace';
+      uctx.fillText(((i+1)%10)+"", sx+3, sy+9); }
     invSlotRects.push({x:sx,y:sy,w:slot,h:slot,region,idx:i,has:!!wkey});
   }
 }
@@ -6654,42 +6776,79 @@ function drawSoulIcon(cx, cy, color, glow){
   uctx.fillRect(cx+0.7, cy-2, 1.4, 2);
   uctx.restore();
 }
+// v18: 버튼용 픽셀 아이콘 + 상점 행 스타일 버튼
+const UI_TRASH=["..cc...","ccccccc",".......",".cdcdc.",".cdcdc.",".cdcdc.",".ccccc."];
+const UI_HAMMER=[".hhhhh.",".hHHHh.",".hhhhh.","...w...","...w...","...w...","...w..."];
+function invButton(x,y,w,h,label,st,icon,iconPal){
+  uctx.fillStyle="#0e0806"; uctx.fillRect(x,y,w,h);
+  uctx.fillStyle=st.bd; uctx.fillRect(x+1,y+1,w-2,h-2);
+  uctx.fillStyle=st.bg; uctx.fillRect(x+2,y+2,w-4,h-4);
+  uctx.fillStyle="rgba(255,255,255,0.06)"; uctx.fillRect(x+2,y+2,w-4,1);
+  uctx.font='8px "Galmuri7", monospace'; uctx.textBaseline="top"; uctx.textAlign="left";
+  const tw=Math.ceil(uctx.measureText(label).width), iw=icon?10:0;
+  const tx=Math.round(x+w/2-(tw+iw)/2), ty=y+Math.round(h/2)-4;
+  if(icon) uiBits(uctx, tx, ty+1, icon, iconPal);
+  uctx.fillStyle="#120b08"; uctx.fillText(label, tx+iw, ty+1);
+  uctx.fillStyle=st.fg; uctx.fillText(label, tx+iw, ty);
+  uctx.textBaseline="alphabetic";
+}
 function drawInventory(){
   uctx.save(); uctx.scale(UIS,UIS);
-  uctx.fillStyle="rgba(6,5,9,0.94)"; uctx.fillRect(0,0,CW,CH);
+  uctx.fillStyle="rgba(6,4,8,0.9)"; uctx.fillRect(0,0,CW,CH);
   ensureSlots();
   invSlotRects=[];
 
   const cols=10, gap=3;
   const showChest = chestOpen && Array.isArray(player.chest);
-  // v3.5: 슬롯을 약간 줄여(최대 26) 격자·설명·버리기 버튼이 모두 화면 안에 들어가게
-  const slot=Math.max(18, Math.min(26, Math.floor((CW-40)/cols)-gap));
+  // v18: 나무 테 패널 + 제목 명판(상점과 같은 스타일)
+  const fx=4, fy=11, fw=CW-8, fh=CH-14;
+  uiPanel(uctx, fx, fy, fw, fh, {fill:"#1d1510"});
+  const title=showChest? "보관상자 / 인벤토리":"인벤토리";
+  uctx.font='11px "Galmuri11", monospace';
+  const tw=Math.ceil(uctx.measureText(title).width)+28;
+  uiPanel(uctx, Math.round(CW/2-tw/2), 3, tw, 18, {fill:"#4a2c18"});
+  uctx.textAlign="center"; uctx.textBaseline="top";
+  uctx.fillStyle="#1a100a"; uctx.fillText(title, CW/2, 7);
+  uctx.fillStyle="#ffd24a"; uctx.fillText(title, CW/2, 6);
+  uctx.textAlign="left"; uctx.textBaseline="alphabetic";
+
+  // ── 선택 아이템 설명을 먼저 줄바꿈 → 하단 패널 높이 결정(폰에서도 잘리지 않게) ──
+  const selKey=curSlotKey();
+  const innerW=fw-28;
+  const maxNL = CW<300 ? 4 : 3;                  // 설명 최대 줄 수(좁은 세로 폰은 4줄)
+  const oneLineHelp = CW>=380;                   // 넓은 화면은 조작 안내 1줄
+  let statLines=[], flavLines=[], SW=null;
+  uctx.font='8px "Galmuri9", monospace';
+  if(selKey){
+    SW=WEAPONS[selKey]||WEAPONS.torch; const lv=wlvOf(selKey);
+    const kindLabel = SW.kind==="radial"?"주변360":(SW.kind==="magic"?"마법":"전방");
+    const dmgStr=(Math.round((SW.dmg+wBonus(selKey))*10)/10)+(lv>0?" (+"+lv+")":"");
+    statLines=wrapLines(uctx, kindLabel+" / 피해 "+dmgStr+" / 사거리 "+SW.reach, innerW);
+    flavLines=wrapLines(uctx, SW.flavor||SW.desc||"", innerW).filter(l=>l);
+    while(statLines.length+flavLines.length>maxNL && flavLines.length>1){ flavLines.pop(); flavLines[flavLines.length-1]=flavLines[flavLines.length-1].slice(0,-1)+"…"; }
+  }
+  const nl=Math.max(1, statLines.length+flavLines.length);
+  const helpH = oneLineHelp ? 9 : 18;
+  const panelH=47+helpH+nl*10;
+  const panelY=fy+fh-4-panelH;
+  const panelYMax=fy+fh-4-(47+helpH+maxNL*10);   // 칸 크기는 '가장 긴 설명' 기준 → 선택이 바뀌어도 격자가 움직이지 않음
+
+  // ── v8: 가호(토글) + 영혼(표시) 행 — 인벤 칸을 차지하지 않음 ──
+  const blessRowY = drawBlessSoulRow(26);
+  // 스크롤 영역 = 가호 행 아래 ~ 패널 위
+  const viewTop=blessRowY+2, viewBot=panelY-3, viewH=viewBot-viewTop;
+  const LBL=9;                                   // 첫 칸 라벨 높이(클립에 잘리지 않게)
+  // 슬롯 크기 — 가로 폭 기준, 상자가 없으면 세로에도 맞춤(가로 폰에서 핫바가 가려지지 않게)
+  let slot=Math.max(18, Math.min(26, Math.floor((CW-40)/cols)-gap));
+  if(!showChest){ const fitV=Math.floor((panelYMax-3-viewTop-LBL-16)/4)-gap; if(fitV<slot) slot=Math.max(18, fitV); }
   const gridW=cols*slot+(cols-1)*gap;
   const gX=Math.floor((CW-gridW)/2);
   const rowH=slot+gap;
   const blockGap=12;
 
-  // 제목
-  const titleY=16;
-  uctx.fillStyle="#ffd24a"; uctx.font='11px "Galmuri11", monospace'; uctx.textAlign="center";
-  uctx.fillText(showChest? "◆  보관상자 / 인벤토리  ◆":"◆  인벤토리  ◆", CW/2, titleY);
-  uctx.textAlign="left";
-
-  // ── v8: 가호(토글) + 영혼(표시) 행 — 인벤 칸을 차지하지 않음 ──
-  const blessRowY = drawBlessSoulRow(titleY+6);
-
-  // ── 하단 고정 패널(상세+조작 2줄+버리기/강화) — v3.23: 높이 +6(버튼이 좁은 화면에서 잘리지 않게) ──
-  const panelH=90;
-  const panelY=CH-panelH;
-  // 스크롤 영역 = 가호 행 아래 ~ 패널 위 (v3.20: 인벤 열림 시 상단 터치버튼을 숨기므로 추가 여백 불필요)
-  const viewTop=blessRowY+4, viewBot=panelY-4, viewH=viewBot-viewTop;
-
-  // 슬롯 전체 높이
-  const chestRows= showChest?5:0;
-  const contentH = (showChest?(5*rowH+blockGap):0) + 3*rowH + 10 + 1*rowH + 6;
+  const contentH = LBL + (showChest?(5*rowH+blockGap):0) + 3*rowH + 10 + 1*rowH + 6;
   const maxScroll=Math.max(0, contentH-viewH);
   invMaxScroll=maxScroll;
-  // 목표/표시값 클램프 + 부드러운 보간
   if(invScrollTarget<0) invScrollTarget=0; if(invScrollTarget>maxScroll) invScrollTarget=maxScroll;
   invScroll += (invScrollTarget-invScroll)*0.28;
   if(Math.abs(invScrollTarget-invScroll)<0.5) invScroll=invScrollTarget;
@@ -6697,8 +6856,8 @@ function drawInventory(){
 
   // 클립한 스크롤 영역
   uctx.save();
-  uctx.beginPath(); uctx.rect(0, viewTop, CW, viewH); uctx.clip();
-  let y= viewTop - invScroll;
+  uctx.beginPath(); uctx.rect(fx+2, viewTop, fw-4, viewH); uctx.clip();
+  let y= viewTop + LBL - invScroll;
   if(showChest){ drawSlotGrid("보관상자", player.chest, cols, 5, gX, y, slot, gap, "chest"); y += 5*rowH + blockGap; }
   drawSlotGrid("인벤토리", player.storage, cols, 3, gX, y, slot, gap, "storage"); y += 3*rowH + 10;
   drawSlotGrid("핫바 (숫자키 1~0)", player.hotbar, cols, 1, gX, y, slot, gap, "hotbar");
@@ -6706,79 +6865,77 @@ function drawInventory(){
 
   // 스크롤바(필요할 때만)
   if(maxScroll>0){
-    const barX=CW-6, trackH=viewH;
+    const barX=fx+fw-8, trackH=viewH;
     const thumbH=Math.max(18, trackH*viewH/contentH);
     const thumbY=viewTop + (trackH-thumbH)*(invScroll/maxScroll);
-    uctx.fillStyle="rgba(255,255,255,0.08)"; uctx.fillRect(barX,viewTop,3,trackH);
-    uctx.fillStyle="rgba(255,210,100,0.6)"; uctx.fillRect(barX,thumbY,3,thumbH);
-    // 위/아래 더 있음 화살표
+    uctx.fillStyle="#0e0806"; uctx.fillRect(barX,viewTop,3,trackH);
+    uctx.fillStyle="#e2b553"; uctx.fillRect(barX,Math.round(thumbY),3,Math.round(thumbH));
+    uctx.fillStyle="#fff0b8"; uctx.fillRect(barX,Math.round(thumbY),1,Math.round(thumbH));
     uctx.fillStyle="#ffd24a"; uctx.font='8px "Galmuri7",monospace'; uctx.textAlign="center";
     if(invScroll>2) uctx.fillText("▲", CW/2, viewTop+8);
-    if(invScroll<maxScroll-2) uctx.fillText("▼", CW/2, viewBot-3);
+    if(invScroll<maxScroll-2) uctx.fillText("▼", CW/2, viewBot-2);
     uctx.textAlign="left";
   }
 
-  // ── 하단 고정 패널 ──
-  uctx.fillStyle="rgba(10,8,14,0.96)"; uctx.fillRect(0,panelY,CW,panelH);
-  uctx.fillStyle="#2a2634"; uctx.fillRect(0,panelY,CW,1);
-  const selKey=curSlotKey();
+  // ── 하단 고정 패널(상세 + 조작 안내 + 버리기/강화) ──
+  uiPanel(uctx, fx+5, panelY, fw-10, panelH, {fill:"#21170f", noRivet:true, alpha:1});
+  uctx.textAlign="center"; uctx.textBaseline="top";
   if(selKey){
-    const SW=WEAPONS[selKey]||WEAPONS.torch, lv=wlvOf(selKey);
-    const kindLabel = SW.kind==="radial"?"주변360":(SW.kind==="magic"?"마법":"전방");
-    uctx.textAlign="center";
-    uctx.fillStyle="#ffe6a0"; uctx.font='10px "Galmuri11", monospace';
-    uctx.fillText(SW.name + (selKey===player.weapon?"  ● 장착중":""), CW/2, panelY+13);
-    uctx.fillStyle="#b8b2a6"; uctx.font='8px "Galmuri9", monospace';
-    const dmgStr=(Math.round((SW.dmg+wBonus(selKey))*10)/10)+(lv>0?" (+"+lv+")":"");
-    const desc=kindLabel+" / 피해 "+dmgStr+" / 사거리 "+SW.reach+"  —  "+(SW.flavor||SW.desc||"");
-    const dl=wrapLines(uctx, desc, CW-30);
-    uctx.fillText(dl[0]||"", CW/2, panelY+25);
-    uctx.textAlign="left";
-  }
-  // 조작 안내 — 2줄 (v3.7: 7px로 축소 + 위로 올려 버리기 버튼과 간격 확보)
-  uctx.fillStyle="#7a746a"; uctx.font='7px "Galmuri7", monospace'; uctx.textAlign="center";
-  if(isMobile){
-    uctx.fillText("길게 눌러 집기 · 끌어서 이동 · 무기 칸 탭=장착", CW/2, panelY+37);
-    uctx.fillText("아래 ⚒로 강화 · 위/아래 스크롤 · 🎒 닫기", CW/2, panelY+47);
+    const nm=SW.name, eq=(selKey===player.weapon);
+    uctx.font='10px "Galmuri11", monospace';
+    const nw=Math.ceil(uctx.measureText(nm).width);
+    uctx.font='7px "Galmuri7", monospace';
+    const bw2=eq? Math.ceil(uctx.measureText("장착중").width)+8 : 0;
+    const nx=Math.round(CW/2-(nw+(eq?bw2+6:0))/2);
+    uctx.textAlign="left"; uctx.font='10px "Galmuri11", monospace';
+    uctx.fillStyle="#1a100a"; uctx.fillText(nm, nx, panelY+6);
+    uctx.fillStyle="#ffe6a0"; uctx.fillText(nm, nx, panelY+5);
+    if(eq){ const bx=nx+nw+6, by=panelY+6;
+      uctx.fillStyle="#0e0806"; uctx.fillRect(bx,by,bw2,10);
+      uctx.fillStyle="#e2b553"; uctx.fillRect(bx+1,by+1,bw2-2,8);
+      uctx.fillStyle="#3a2416"; uctx.font='7px "Galmuri7", monospace'; uctx.fillText("장착중", bx+4, by+1); }
+    uctx.textAlign="center"; uctx.font='8px "Galmuri9", monospace';
+    let ly=panelY+19;
+    for(const l of statLines){ uctx.fillStyle="#e2b553"; uctx.fillText(l, CW/2, ly); ly+=10; }
+    for(const l of flavLines){ uctx.fillStyle="#cfc2a8"; uctx.fillText(l, CW/2, ly); ly+=10; }
   } else {
-    uctx.fillText("클릭/드래그로 집기·이동 · 같은칸 교환 · 숫자키 핫바", CW/2, panelY+37);
-    uctx.fillText("U 강화 · 휠 스크롤 · E 닫기", CW/2, panelY+47);
+    uctx.fillStyle="#8a7a62"; uctx.font='10px "Galmuri11", monospace';
+    uctx.fillText("빈 칸", CW/2, panelY+5);
+    uctx.font='8px "Galmuri9", monospace'; uctx.fillStyle="#6a5e4c";
+    uctx.fillText("아이템을 끌어다 놓을 수 있다", CW/2, panelY+19);
   }
-  // 버리기 + 강화 버튼 — v3.23: 무기 미선택/횃불이어도 강화 버튼은 항상 표시(상태만 비활성)
+  // 조작 안내 — 2줄
+  const cy=panelY+19+nl*10+2;
+  uctx.fillStyle="#8a7a62"; uctx.font='7px "Galmuri7", monospace';
+  const help = isMobile ? ["길게 눌러 집기 · 끌어서 이동 · 무기 칸 탭=장착", "아래 ⚒로 강화 · 위/아래 스크롤 · 🎒 닫기"]
+                        : ["클릭/드래그로 집기·이동 · 같은칸 교환 · 숫자키 핫바", "U 강화 · 휠 스크롤 · E 닫기"];
+  if(oneLineHelp) uctx.fillText(help[0]+"  ·  "+help[1], CW/2, cy);
+  else { uctx.fillText(help[0], CW/2, cy); uctx.fillText(help[1], CW/2, cy+9); }
+  uctx.textAlign="left"; uctx.textBaseline="alphabetic";
+  // 버리기 + 강화 버튼 — 상점 행과 같은 나무 버튼. 강화 버튼은 항상 표시(상태만 비활성)
   dropBtnRect=null; upgBtnRect=null;
   {
     const bw=92,bh=18,gap=8;
-    const totalW=bw*2+gap, bx0=CW/2-totalW/2, by=panelY+62;
+    const totalW=bw*2+gap, bx0=Math.round(CW/2-totalW/2), by=cy+helpH+3;
     const isTorch = (selKey==="torch");
     const hasWeapon = !!selKey;
-    // 버리기(좌) — 횃불/빈칸은 버릴 수 없음(비활성)
-    const bx=bx0;
     const canDrop = hasWeapon && !isTorch;
-    uctx.fillStyle = canDrop ? "#5a2422" : "#2a2226";
-    uctx.fillRect(bx,by,bw,bh);
-    uctx.strokeStyle = canDrop ? "#a04038" : "#544048";
-    uctx.lineWidth=1; uctx.strokeRect(bx+0.5,by+0.5,bw-1,bh-1);
-    uctx.fillStyle = canDrop ? "#ffb0a8" : "#7a6a6e";
-    uctx.font='8px "Galmuri7", monospace'; uctx.textAlign="center";
-    uctx.fillText("🗑 버리기", bx+bw/2, by+12);
-    dropBtnRect = canDrop ? {x:bx,y:by,w:bw,h:bh} : null;
-    // 강화(우) — 항상 표시. 무기 없음/횃불이면 비활성, 아니면 비용/레벨 표시
+    invButton(bx0,by,bw,bh,"버리기",
+      canDrop ? {bd:"#b0483a",bg:"#3a1612",fg:"#ffb0a8"} : {bd:"#3a2a20",bg:"#16100d",fg:"#6a5a50"},
+      UI_TRASH, canDrop ? {c:"#ffb0a8",d:"#7a2a24"} : {c:"#6a5a50",d:"#2a201a"});
+    dropBtnRect = canDrop ? {x:bx0,y:by,w:bw,h:bh} : null;
     const ux=bx0+bw+gap;
     const upgradable = hasWeapon && !isTorch;
     const lv = upgradable ? wlvOf(selKey) : 0;
     const cost = upgradable ? upgradeCostCoins(selKey) : null;
     const canUp = upgradable && cost!==null && coins>=cost;
-    let bg,bd,fg,label;
-    if(!upgradable){ bg="#26242c"; bd="#46444c"; fg="#7a7680"; label="⚒ 강화 불가"; }
-    else if(cost===null){ bg="#3a3320"; bd="#6a5a2a"; fg="#ffd24a"; label="⚒ 최대 +"+WEAPON_MAX_LV; }
-    else if(canUp){ bg="#244a2a"; bd="#48a050"; fg="#b6ffc0"; label="⚒ 강화 +"+(lv+1)+" ("+cost+")"; }
-    else { bg="#2a2620"; bd="#5a5040"; fg="#9a948a"; label="⚒ 강화 +"+(lv+1)+" ("+cost+")"; }
-    uctx.fillStyle=bg; uctx.fillRect(ux,by,bw,bh);
-    uctx.strokeStyle=bd; uctx.lineWidth=1; uctx.strokeRect(ux+0.5,by+0.5,bw-1,bh-1);
-    uctx.fillStyle=fg; uctx.font='8px "Galmuri7", monospace';
-    uctx.fillText(label, ux+bw/2, by+12);
+    let st,label;
+    if(!upgradable){ st={bd:"#3a2a20",bg:"#16100d",fg:"#6a5a50"}; label="강화 불가"; }
+    else if(cost===null){ st={bd:"#8a6a2a",bg:"#2a2010",fg:"#ffd24a"}; label="최대 +"+WEAPON_MAX_LV; }
+    else if(canUp){ st={bd:"#e2b553",bg:"#3a2a16",fg:"#ffe6a0"}; label="강화 +"+(lv+1)+" ("+cost+")"; }
+    else { st={bd:"#4a3424",bg:"#16100d",fg:"#c0606a"}; label="강화 +"+(lv+1)+" ("+cost+")"; }
+    invButton(ux,by,bw,bh,label,st,UI_HAMMER,{h:st.fg,H:"#fff6dc",w:"#9a6a3e"});
     upgBtnRect = canUp ? {x:ux,y:by,w:bw,h:bh} : null;   // 실제로 강화 가능할 때만 탭 판정 활성
-    uctx.textAlign="left";
   }
   // v15: 집어든 아이템 — 커서/손가락 위치에 떠 있게 렌더(마인크래프트식)
   if(held && WEAPONS[held.key]){
@@ -6797,78 +6954,149 @@ let dropBtnRect=null;
 let upgBtnRect=null;   // v3.22: 인벤 강화 버튼 클릭 판정
 
 // ---- 지도 오버레이 (M 토글) — 탐험한 영역만 표시 ----------------------
+// v18: 양피지 지도. 셀은 1px=1타일 오프스크린(mapCv)에 fog 갱신 때만 그리고(ImageData), 매 프레임은 확대 blit만.
 let fogData=null, fogReadFloor=-1, fogReadFrame=0;
+const mapCv=document.createElement("canvas"); mapCv.width=MAP_W; mapCv.height=MAP_H;
+const mapCx=mapCv.getContext("2d");
+let mapImg=null, mapBounds=null, mapExit=null, mapCacheAdmin=null, mapFogKey=null;
+function rebuildMapCache(){
+  const newFloor = (!fogData || fogReadFloor!==floorNum);
+  fogData = fctx.getImageData(0,0,MAP_W,MAP_H).data;
+  fogReadFloor = floorNum; mapCacheAdmin = adminMode; mapFogKey = lastFogTile;
+  if(newFloor || !mapExit){                      // 출구 타일 위치는 층마다 한 번만 찾음
+    mapExit=null;
+    for(let y=0;y<MAP_H && !mapExit;y++) for(let x=0;x<MAP_W;x++){ if(grid[y][x]===T.EXIT){ mapExit={tx:x,ty:y}; break; } }
+  }
+  if(!mapImg) mapImg=mapCx.createImageData(MAP_W,MAP_H);
+  const d=mapImg.data, fd=fogData;
+  let x0=MAP_W, y0=MAP_H, x1=-1, y1=-1;
+  for(let y=0;y<MAP_H;y++){ const row=grid[y], up=grid[y-1], dn=grid[y+1];
+    for(let x=0;x<MAP_W;x++){
+      const i=(y*MAP_W+x)*4, a=fd[i+3];
+      let b;                                       // 진하기 0~1 (가장자리일수록 양피지로 번짐)
+      if(adminMode) b = a>3 ? Math.min(1, 0.55 + a/170) : 0.38;
+      else if(a<=3){ d[i+3]=0; continue; }
+      else b = Math.min(1, a/110);
+      if(a>3){ if(x<x0)x0=x; if(x>x1)x1=x; if(y<y0)y0=y; if(y>y1)y1=y; }
+      const cell=row[x];
+      let r,g,bl,al;
+      if(cell!==T.WALL){ r=244; g=230; bl=196; al=b; }                       // 바닥 = 밝은 종이
+      else {
+        const edge=(row[x-1]!==undefined&&row[x-1]!==T.WALL)||(row[x+1]!==undefined&&row[x+1]!==T.WALL)||
+                   (up&&up[x]!==T.WALL)||(dn&&dn[x]!==T.WALL);
+        if(edge){ r=74; g=48; bl=28; al=b; }                                  // 벽 테두리 = 잉크
+        else { r=150; g=118; bl=78; al=b*0.35; }                              // 속이 찬 벽 = 옅은 음영
+      }
+      d[i]=r; d[i+1]=g; d[i+2]=bl; d[i+3]= al>0.62?255 : al>0.3?150 : al>0.1?70 : 30;   // 3단 양자화(픽셀 느낌)
+    }
+  }
+  if(adminMode){ x0=0; y0=0; x1=MAP_W-1; y1=MAP_H-1; }
+  mapBounds = x1>=0 ? {x0,y0,x1,y1} : null;
+  mapCx.putImageData(mapImg,0,0);
+}
+// 지도 범례용 작은 표식
+function mapMark(kind,x,y,s,blink){
+  const c=uctx;
+  if(kind==="you"){
+    const m=Math.max(5, s+2), px=Math.round(x-m/2), py=Math.round(y-m/2);
+    c.fillStyle="#2a1408"; c.fillRect(px-1,py-1,m+2,m+2);
+    c.fillStyle= blink?"#ffe06a":"#ff9a3c"; c.fillRect(px,py,m,m);
+    c.fillStyle="#fff6c0"; c.fillRect(px,py,m,1);
+  } else if(kind==="exit"){                       // 계단 = 초록 계단 아이콘
+    const m=Math.max(6, s+2), px=Math.round(x-m/2), py=Math.round(y-m/2);
+    c.fillStyle="#1a2a10"; c.fillRect(px-1,py-1,m+2,m+2);
+    c.fillStyle= blink?"#9cff6a":"#5ac83a"; c.fillRect(px,py,m,m);
+    c.fillStyle="#1a3a10"; const st=Math.max(1,Math.floor(m/3));
+    for(let k=0;k<3;k++) c.fillRect(px+k*st, py+m-(k+1)*st, m-k*st, 1);
+  } else if(kind==="town" || kind==="warp"){
+    const m=Math.max(5, s+1), px=Math.round(x-m/2), py=Math.round(y-m/2);
+    c.fillStyle="#101830"; c.fillRect(px-1,py-1,m+2,m+2);
+    c.fillStyle= kind==="town" ? "#7fd4ff" : "#c89aff"; c.fillRect(px,py,m,m);
+    c.fillStyle="#ffffff"; c.fillRect(px+Math.floor(m/2),py+1,1,m-2);
+  } else if(kind==="chest"){
+    const m=Math.max(5, s+1), px=Math.round(x-m/2), py=Math.round(y-m/2);
+    c.fillStyle="#2a1408"; c.fillRect(px-1,py-1,m+2,m+2);
+    c.fillStyle="#9a5a2a"; c.fillRect(px,py,m,m);
+    c.fillStyle="#e2b553"; c.fillRect(px,py+Math.floor(m/2)-1,m,1); c.fillRect(px+Math.floor(m/2),py+Math.floor(m/2)-1,1,2);
+  }
+}
 function drawFullMap(){
+  // fog는 플레이어가 새 타일로 갈 때만 바뀜(lastFogTile) → 그때만, 최대 8프레임에 한 번 다시 굽기
+  if(!fogData || fogReadFloor!==floorNum || mapCacheAdmin!==adminMode || ((fogReadFrame++ % 8)===0 && mapFogKey!==lastFogTile)) rebuildMapCache();
   uctx.save(); uctx.scale(UIS,UIS);
-  const s = Math.max(2, Math.floor(Math.min(CW/MAP_W, CH/MAP_H)));
-  const mw=MAP_W*s, mh=MAP_H*s;
-  const ox=Math.floor((CW-mw)/2), oy=Math.floor((CH-mh)/2);
-  // 화면 암전 + 지도 패널: 바탕은 '검정'(미탐험은 검정으로 남는다)
-  uctx.fillStyle="rgba(8,7,11,0.86)"; uctx.fillRect(0,0,CW,CH);
-  uctx.fillStyle="#08070b"; uctx.fillRect(ox-3,oy-3,mw+6,mh+6);
-  uctx.strokeStyle="#2a2734"; uctx.lineWidth=1; uctx.strokeRect(ox-2.5,oy-2.5,mw+5,mh+5);
-
-  // fog 읽기 캐시 — 매 프레임 getImageData는 느리므로 8프레임마다 / 층 바뀔 때만 갱신
-  if(!fogData || fogReadFloor!==floorNum || (fogReadFrame++ % 8)===0){
-    fogData = fctx.getImageData(0,0,MAP_W,MAP_H).data;
-    fogReadFloor = floorNum;
+  uctx.fillStyle="rgba(6,4,8,0.9)"; uctx.fillRect(0,0,CW,CH);        // HUD는 어둡게 가림
+  const fd=fogData;
+  const seen=(tx,ty)=> adminMode || fd[(ty*MAP_W+tx)*4+3]>3;
+  // 탐험한 범위로 잘라 확대(빈 검정 지도 방지)
+  const ptx=Math.floor(player.x/TILE), pty=Math.floor(player.y/TILE);
+  let B=mapBounds || {x0:ptx,y0:pty,x1:ptx,y1:pty};
+  const M=2;
+  let bx0=Math.max(0,Math.min(B.x0,ptx)-M), by0=Math.max(0,Math.min(B.y0,pty)-M);
+  let bx1=Math.min(MAP_W-1,Math.max(B.x1,ptx)+M), by1=Math.min(MAP_H-1,Math.max(B.y1,pty)+M);
+  let bw=bx1-bx0+1, bh=by1-by0+1;
+  if(bw<12){ const c=Math.round((bx0+bx1)/2); bx0=Math.max(0,Math.min(MAP_W-12,c-6)); bw=12; }
+  if(bh<10){ const c=Math.round((by0+by1)/2); by0=Math.max(0,Math.min(MAP_H-10,c-5)); bh=10; }
+  // 프레임 안쪽 여백: 위(제목 명판) 22, 아래(범례) 20, 좌우 10
+  const padT=26, padB=22, padX=12;
+  const availW=CW-12-padX*2, availH=CH-10-padT-padB;
+  const s=Math.max(1, Math.min(7, Math.floor(Math.min(availW/bw, availH/bh))));
+  const mw=bw*s, mh=bh*s;
+  const fw=Math.max(Math.min(CW-12, 210), mw+padX*2), fh=mh+padT+padB;
+  const fx=Math.round(CW/2-fw/2), fy=Math.round(CH/2-fh/2)+2;
+  // 나무 테 + 양피지 바탕
+  uiPanel(uctx, fx, fy, fw, fh, {fill:"#5a3620", alpha:1});
+  uctx.fillStyle="#2a170c"; uctx.fillRect(fx+4,fy+4,fw-8,fh-8);
+  uctx.fillStyle="#cdb88e"; uctx.fillRect(fx+5,fy+5,fw-10,fh-10);
+  uctx.fillStyle="#bfa77a"; uctx.fillRect(fx+5,fy+5,fw-10,2); uctx.fillRect(fx+5,fy+fh-7,fw-10,2);
+  uctx.fillRect(fx+5,fy+5,2,fh-10); uctx.fillRect(fx+fw-7,fy+5,2,fh-10);
+  const ox=Math.round(CW/2-mw/2), oy=fy+padT;
+  uctx.fillStyle="#d8c49a"; uctx.fillRect(ox-2,oy-2,mw+4,mh+4);
+  uctx.fillStyle="#a88a5c"; uctx.fillRect(ox-3,oy-3,mw+6,1); uctx.fillRect(ox-3,oy+mh+2,mw+6,1);
+  uctx.fillRect(ox-3,oy-3,1,mh+6); uctx.fillRect(ox+mw+2,oy-3,1,mh+6);
+  uctx.imageSmoothingEnabled=false;
+  uctx.drawImage(mapCv, bx0,by0,bw,bh, ox,oy,mw,mh);
+  // 제목 명판(프레임 안쪽)
+  const title=(adminMode?"전체 지도 (관리자)":"탐험 지도")+"  ·  지하 "+floorNum+"층";
+  uctx.font='9px "Galmuri9", monospace'; uctx.textBaseline="top"; uctx.textAlign="center";
+  const tw=Math.ceil(uctx.measureText(title).width)+22;
+  uiPanel(uctx, Math.round(CW/2-tw/2), fy+6, tw, 16, {fill:"#4a2c18", alpha:1});
+  uctx.fillStyle="#1a100a"; uctx.fillText(title, CW/2, fy+11);
+  uctx.fillStyle="#ffd24a"; uctx.fillText(title, CW/2, fy+10);
+  // 표식들 (탐험했거나 관리자면)
+  const inB=(tx,ty)=> tx>=bx0 && ty>=by0 && tx<bx0+bw && ty<by0+bh;
+  const at=(tx,ty)=>[ox+(tx-bx0+0.5)*s, oy+(ty-by0+0.5)*s];
+  const blink=(Math.floor(Date.now()/400)%2)===0;
+  const shown={};
+  for(const it of items){
+    if(it.type!=="chest" || it.opened || it.taken) continue;
+    const tx=Math.floor(it.x/TILE), ty=Math.floor(it.y/TILE);
+    if(inB(tx,ty) && seen(tx,ty)){ const p=at(tx,ty); mapMark("chest",p[0],p[1],s); shown.chest=1; }
   }
-  const fd = fogData;
-  for(let y=0;y<MAP_H;y++) for(let x=0;x<MAP_W;x++){
-    const a = fd[(y*MAP_W+x)*4+3];        // 탐험 정도(0~255)
-    let b;                                // 밝기 0~1: 가장자리(낮은 a)일수록 어두워 → 검정으로 그라데이션
-    if(adminMode){
-      b = a>3 ? Math.min(1, 0.40 + a/170) : 0.18;   // 관리자: 전체 공개(미탐험은 어둑하게)
-    }else{
-      if(a<=3) continue;                            // 일반: 안 가본 곳은 검정 유지
-      b = Math.min(1, a/110);                        // 막 스쳐 지난 곳=어둑 → 점점 밝게(그라데이션)
-    }
-    const cell=grid[y][x];
-    let cr,cg,cb;
-    if(cell===T.EXIT){
-      // v3.3: 계단은 밝기(fog)와 무관하게 항상 또렷한 연두색 — 검게 묻히지 않게
-      uctx.fillStyle = "#7CFC54";
-      uctx.fillRect(ox+x*s, oy+y*s, s, s);
-      continue;
-    }
-    if(cell===T.WALL){ cr=46; cg=44; cb=58; }       // 벽=어두운 돌
-    else { cr=118; cg=118; cb=140; }                // 바닥=밝은 회색(살짝 보라끼)
-    uctx.fillStyle = `rgb(${Math.round(cr*b)},${Math.round(cg*b)},${Math.round(cb*b)})`;
-    uctx.fillRect(ox+x*s, oy+y*s, s, s);
+  if(townPortal && inB(townPortal.tx,townPortal.ty) && seen(townPortal.tx,townPortal.ty)){ const p=at(townPortal.tx,townPortal.ty); mapMark("town",p[0],p[1],s); shown.town=1; }
+  if(warpPortal && inB(warpPortal.tx,warpPortal.ty) && seen(warpPortal.tx,warpPortal.ty)){ const p=at(warpPortal.tx,warpPortal.ty); mapMark("warp",p[0],p[1],s); shown.warp=1; }
+  if(mapExit && inB(mapExit.tx,mapExit.ty) && seen(mapExit.tx,mapExit.ty)){ const p=at(mapExit.tx,mapExit.ty); mapMark("exit",p[0],p[1],s,blink); shown.exit=1; }
+  // 플레이어 (항상 표시, 깜빡임)
+  mapMark("you", ox+(player.x/TILE-bx0)*s, oy+(player.y/TILE-by0)*s, s, (Math.floor(Date.now()/350)%2)===0);
+  // 범례(프레임 아래쪽, 양피지 위 잉크 글씨)
+  const leg=[["you","나"]];
+  if(shown.exit) leg.push(["exit","계단"]);
+  if(shown.town) leg.push(["town","마을"]);
+  if(shown.warp) leg.push(["warp","포털"]);
+  if(shown.chest) leg.push(["chest","상자"]);
+  uctx.font='7px "Galmuri7", monospace'; uctx.textAlign="left";
+  const close=isMobile?"지도 버튼 닫기":"M 닫기";
+  let totW=Math.ceil(uctx.measureText(close).width)+8;
+  for(const [,t] of leg) totW+=10+Math.ceil(uctx.measureText(t).width)+8;
+  let lx=Math.round(CW/2-totW/2); const ly=fy+fh-17;
+  for(const [k,t] of leg){
+    mapMark(k, lx+3, ly+4, 3, true);
+    uctx.fillStyle="#3a2614"; uctx.fillText(t, lx+10, ly);
+    lx+=10+Math.ceil(uctx.measureText(t).width)+8;
   }
-  // 제목
-  uctx.fillStyle="#cfc7bb"; uctx.font='8px "Galmuri7", monospace'; uctx.textAlign="center";
-  uctx.fillText(adminMode?"전체 지도 (관리자)  ·  M 닫기":"탐험 지도  ·  M 닫기", CW/2, oy-7);
-  uctx.textAlign="left";
-  // 마을 출구(포털) 표시 — 탐험했거나 관리자면
-  if(townPortal){
-    const tA = fd[(townPortal.ty*MAP_W+townPortal.tx)*4+3];
-    if(adminMode || tA>3){
-      uctx.fillStyle="#7fd4ff";
-      uctx.fillRect(ox+townPortal.tx*s-1, oy+townPortal.ty*s-1, s+2, s+2);
-    }
-  }
-  // v3.3: 계단(출구) 강조 마커 — 연두색 테두리 + 깜빡임으로 멀리서도 잘 보이게
-  let exTx=-1, exTy=-1;
-  for(let y=0;y<MAP_H && exTx<0;y++) for(let x=0;x<MAP_W;x++){ if(grid[y][x]===T.EXIT){ exTx=x; exTy=y; break; } }
-  if(exTx>=0){
-    const eA = fd[(exTy*MAP_W+exTx)*4+3];
-    if(adminMode || eA>3){
-      const blinkE=(Math.floor(Date.now()/400)%2)===0;
-      uctx.fillStyle="#7CFC54"; uctx.fillRect(ox+exTx*s-1, oy+exTy*s-1, s+2, s+2);
-      uctx.strokeStyle=blinkE?"#d6ffb0":"#3aa02a"; uctx.lineWidth=1.5;
-      uctx.strokeRect(ox+exTx*s-2.5, oy+exTy*s-2.5, s+5, s+5);
-    }
-  }
-  // 플레이어 위치 (항상 표시, 깜빡임)
-  const ppx=ox+(player.x/TILE)*s, ppy=oy+(player.y/TILE)*s;
-  const blink = (Math.floor(Date.now()/350)%2)===0;
-  uctx.fillStyle = blink ? "#ffe06a" : "#ffb020";
-  uctx.fillRect(Math.floor(ppx)-2, Math.floor(ppy)-2, 5, 5);
-  uctx.fillStyle="#1a1410"; uctx.fillRect(Math.floor(ppx), Math.floor(ppy), 1, 1);
+  uctx.fillStyle="#7a5a3a"; uctx.fillText(close, lx+4, ly);
+  uctx.textAlign="left"; uctx.textBaseline="alphabetic";
   uctx.restore();
 }
-
 // ---- 렌더 --------------------------------------------------------------
 let _hudEl=null, _panelEls=null;
 function render(){
@@ -9644,24 +9872,64 @@ function drawSoulBox(speaker, text, blink){
 function drawFloorSelect(){
   const fs=floorSelect; if(!fs) return;
   uctx.save(); uctx.scale(UIS,UIS);
-  uctx.fillStyle="rgba(10,4,18,0.92)"; uctx.fillRect(0,0,CW,CH);
-  uctx.textAlign="center";
-  uctx.fillStyle="#e0c8ff"; uctx.font='12px "Galmuri11", monospace';
-  uctx.fillText("◆ 층 이동 포털 ◆", CW/2, 46);
+  uctx.fillStyle="rgba(10,4,18,0.9)"; uctx.fillRect(0,0,CW,CH);
+  // v18: 나무 테 패널(보라 포털 빛) + 제목 명판
+  const pw=Math.min(CW-16, 300), ph=Math.min(CH-24, 170);
+  const px=Math.round(CW/2-pw/2), py=Math.round(CH/2-ph/2)+4;
+  uiPanel(uctx, px, py, pw, ph, {fill:"#1a1222", alpha:1});
+  uctx.fillStyle="rgba(200,154,255,0.06)"; uctx.fillRect(px+2,py+2,pw-4,Math.round(ph/2));
+  const title="층 이동 포털";
+  uctx.font='12px "Galmuri11", monospace'; uctx.textBaseline="top"; uctx.textAlign="center";
+  const tw=Math.ceil(uctx.measureText(title).width)+30;
+  uiPanel(uctx, Math.round(CW/2-tw/2), py-9, tw, 20, {fill:"#3a2450", alpha:1});
+  uctx.fillStyle="#120818"; uctx.fillText(title, CW/2, py-4);
+  uctx.fillStyle="#e8d0ff"; uctx.fillText(title, CW/2, py-5);
   uctx.fillStyle="#9a8ab0"; uctx.font='7px "Galmuri7", monospace';
-  uctx.fillText("원하는 층으로 즉시 이동 — 몬스터/보상은 해당 층 기준", CW/2, 62);
-  // 큰 층 숫자
-  uctx.fillStyle="#fff2ff"; uctx.font='30px "Galmuri11", monospace';
-  uctx.fillText(""+fs.floor+" 층", CW/2, CH/2+8);
-  // ◀ ▶ 화살표
-  uctx.fillStyle="#c89aff"; uctx.font='22px "Galmuri11", monospace';
-  uctx.fillText("◀", CW/2-70, CH/2+4); uctx.fillText("▶", CW/2+70, CH/2+4);
+  uctx.fillText("원하는 층으로 즉시 이동 — 몬스터/보상은 해당 층 기준", CW/2, py+17);
+  // 층 번호 타일: 가운데 = 선택(크게), 양옆 = 이웃 층(1층 미만은 잠김/회색)
+  const cy=py+Math.round(ph/2)+2;
+  const bigW=84, bigH=46, smW=30, smH=26, gap=6;
+  const n=(pw-bigW-60)>=2*(smW+gap)*2 ? 2 : 1;      // 좁은 화면이면 양옆 1칸씩
+  const tile=(f,x,y,w,h,big)=>{
+    const ok=f>=1, boss=ok && f%BOSS_FLOOR===0;
+    uctx.fillStyle="#0e0806"; uctx.fillRect(x,y,w,h);
+    uctx.fillStyle= big ? "#e2b553" : (ok ? "#5a3c6a" : "#2a2230"); uctx.fillRect(x+1,y+1,w-2,h-2);
+    uctx.fillStyle= big ? "#2a1838" : (ok ? "#1e1428" : "#141018"); uctx.fillRect(x+2,y+2,w-4,h-4);
+    uctx.fillStyle="rgba(255,255,255,0.06)"; uctx.fillRect(x+2,y+2,w-4,1);
+    if(big){ uctx.fillStyle="#fff0b8"; uctx.fillRect(x+1,y+1,1,1); uctx.fillRect(x+w-2,y+1,1,1); uctx.fillRect(x+1,y+h-2,1,1); uctx.fillRect(x+w-2,y+h-2,1,1); }
+    uctx.textAlign="center"; uctx.textBaseline="top";
+    if(!ok){ uctx.fillStyle="#4a4050"; uctx.font='8px "Galmuri7", monospace'; uctx.fillText("—", x+w/2, y+h/2-4); return; }
+    if(big){
+      uctx.font='24px "Galmuri11", monospace';
+      uctx.fillStyle="#120818"; uctx.fillText(f+"층", x+w/2, y+12);
+      uctx.fillStyle="#fff2ff"; uctx.fillText(f+"층", x+w/2, y+11);
+    } else {
+      uctx.font='9px "Galmuri9", monospace';
+      uctx.fillStyle="#b8a8cc"; uctx.fillText(""+f, x+w/2, y+h/2-5);
+    }
+    if(boss){ uctx.fillStyle="#e8344e"; const bx=x+w-(big?8:6), by=y+(big?4:3); uctx.fillRect(bx,by,big?4:3,big?4:3); }
+  };
+  const bx=Math.round(CW/2-bigW/2), by=cy-Math.round(bigH/2);
+  for(let k=n;k>=1;k--){
+    const sy=cy-Math.round(smH/2);
+    tile(fs.floor-k, bx-gap-(smW+gap)*(k-1)-smW, sy, smW, smH, false);
+    tile(fs.floor+k, bx+bigW+gap+(smW+gap)*(k-1), sy, smW, smH, false);
+  }
+  tile(fs.floor, bx, by, bigW, bigH, true);
+  // ◀ ▶ 픽셀 화살표
+  const ax=Math.round(bx-gap-(smW+gap)*n-6), ax2=Math.round(bx+bigW+gap+(smW+gap)*n+5);
+  uctx.fillStyle= fs.floor>1 ? "#c89aff" : "#4a4058";
+  for(let i=0;i<6;i++) uctx.fillRect(ax-5+i, cy-i, 1, i*2+1);
+  uctx.fillStyle="#c89aff";
+  for(let i=0;i<6;i++) uctx.fillRect(ax2+5-i, cy-i, 1, i*2+1);
+  // 보스층 표시 범례 + 조작 안내
+  uctx.textAlign="center"; uctx.textBaseline="top";
+  if(fs.floor%BOSS_FLOOR===0){ uctx.fillStyle="#ff8a94"; uctx.font='8px "Galmuri9", monospace'; uctx.fillText("보스가 기다리는 층", CW/2, by+bigH+5); }
   uctx.fillStyle="#8a7aa0"; uctx.font='7px "Galmuri7", monospace';
-  uctx.fillText("A/D 또는 ◀▶ 로 선택 · E/확인 으로 이동 · ESC 취소", CW/2, CH-30);
-  // 모바일 탭 영역 안내
+  uctx.fillText("A/D 또는 ◀▶ 로 선택 · E/확인 으로 이동 · ESC 취소", CW/2, py+ph-27);
   uctx.fillStyle="#b89ad0"; uctx.font='8px "Galmuri9", monospace';
-  uctx.fillText("(화면 좌/우 탭으로 ±1, 가운데 탭으로 이동)", CW/2, CH-16);
-  uctx.textAlign="left"; uctx.restore();
+  uctx.fillText("(화면 좌/우 탭으로 ±1, 가운데 탭으로 이동)", CW/2, py+ph-16);
+  uctx.textAlign="left"; uctx.textBaseline="alphabetic"; uctx.restore();
 }
 // ---- 층 전환 -----------------------------------------------------------
 function buildFloor(){
@@ -9893,6 +10161,8 @@ function doGameOver(){
   document.getElementById("overDepth").textContent=floorNum;
   document.getElementById("overScore") && (document.getElementById("overScore").textContent=score);
   const oc=document.getElementById("overCause"); if(oc) oc.textContent = lastHurtSrc ? ("원인: "+lastHurtSrc) : "";
+  const ok=document.getElementById("overKills"); if(ok) ok.textContent=runKills;            // v18: 이번 탐험 기록
+  const ocn=document.getElementById("overCoins"); if(ocn) ocn.textContent=runCoinsEarned;
   p.classList.remove("hidden");
 }
 // v3.8: 세이브 포인트 부활 — 같은 층을 입구부터 다시 시작(보스층이면 보스 재소환). 코인·무기·점수 유지.
@@ -9916,6 +10186,8 @@ function doWin(){
   if(typeof LB==="object" && LB.submitRun()) showRecToast();   // v5: 기록 제출 + 신기록 토스트
   document.getElementById("winScore").textContent=score;
   document.getElementById("winDepth").textContent=floorNum;
+  const wk=document.getElementById("winKills"); if(wk) wk.textContent=runKills;              // v18: 이번 탐험 기록
+  const wc=document.getElementById("winCoins"); if(wc) wc.textContent=runCoinsEarned;
   document.getElementById("win").classList.remove("hidden");
 }
 function restart(){
@@ -10051,6 +10323,171 @@ document.getElementById("prologue").addEventListener("touchend",e=>{
   if(e.target.id==="prologueSkip") return;     // 버튼은 자체 처리
   endPrologue();
 },{passive:true});
+
+// ====================== v18: 타이틀/프롤로그 픽셀 배경 + 픽셀 아이콘 ======================
+// 저해상도 캔버스(1px = 화면 2~4px)에 밤하늘을 굽고, 0.09초마다 횃불·별 반짝임·별똥별만 덧그림(보일 때만)
+const PXBG=(function(){
+  const cache={};
+  let tick=0, shoot=[];
+  function rnd(seed){ let s=seed>>>0; return ()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+  function build(W,H,mode){
+    const c=document.createElement("canvas"); c.width=W; c.height=H;
+    const g=c.getContext("2d"), R=rnd(7331);
+    const title=(mode==="title");
+    const hz= title ? Math.round(H*0.66) : H;                  // 지평선
+    const sky= title ? ["#07060f","#0a0918","#0e0c21","#13102a","#1a1534","#221a3c"]
+                     : ["#020205","#04040b","#070612","#0a0918","#0d0b1e","#100e24"];
+    const bh=hz/sky.length;
+    for(let i=0;i<sky.length;i++){
+      const y0=Math.round(i*bh), y1=Math.round((i+1)*bh);
+      g.fillStyle=sky[i]; g.fillRect(0,y0,W,y1-y0);
+      if(i+1<sky.length){ g.fillStyle=sky[i+1]; for(let y=y1-2;y<y1;y++) for(let x=(y&1);x<W;x+=2) g.fillRect(x,y,1,1); }
+    }
+    const stars=[];
+    const n=Math.round(W*hz/(title?150:170));
+    for(let i=0;i<n;i++){
+      const x=Math.floor(R()*W), y=Math.floor(R()*hz*0.9), b=R();
+      g.fillStyle= b>0.85?"#fff6dc": b>0.5?"#a8b0d8":"#4a4a78"; g.fillRect(x,y,1,1);
+      if(b>0.95){ g.fillStyle="#5a5a8a"; g.fillRect(x-1,y,1,1); g.fillRect(x+1,y,1,1); g.fillRect(x,y-1,1,1); g.fillRect(x,y+1,1,1); }
+      if(b>0.6) stars.push({x,y});
+    }
+    const torches=[];
+    if(title){
+      // 달
+      const mr=Math.max(5,Math.round(Math.min(W,H)*0.045)), mx=Math.round(W*(W/H>1.9?0.7:0.24)), my=Math.round(H*0.14)+mr;
+      for(let y=-mr;y<=mr;y++) for(let x=-mr;x<=mr;x++){ if(x*x+y*y<=mr*mr){ g.fillStyle=(x+y>mr*0.5)?"#cbbf98":"#f2ead0"; g.fillRect(mx+x,my+y,1,1); } }
+      g.fillStyle="#d6caa6"; g.fillRect(mx-Math.round(mr/3),my-1,2,2); g.fillRect(mx+1,my+Math.round(mr/3),1,1);
+      // 먼 산
+      g.fillStyle="#141128";
+      let h=hz-Math.round(H*0.07);
+      for(let x=0;x<W;x++){ h+=Math.round((R()-0.5)*2.4); h=Math.max(hz-Math.round(H*0.15),Math.min(hz-3,h)); g.fillRect(x,h,1,hz-h); }
+      // 땅
+      g.fillStyle="#0d0b16"; g.fillRect(0,hz,W,H-hz);
+      g.fillStyle="#141a1e"; g.fillRect(0,hz,W,1);
+      for(let x=0;x<W;x+=2) g.fillRect(x+(x>>1&1),hz+1,1,1);
+      // 마을 실루엣(좌/우) — 불 켜진 창
+      const village=(x0,x1,base)=>{
+        let x=x0;
+        while(x<x1-8){
+          const w=8+Math.floor(R()*6), hh=5+Math.floor(R()*4);
+          g.fillStyle="#08070f"; g.fillRect(x,base-hh,w,hh);
+          for(let k=0;w-2*k+2>0;k++) g.fillRect(x+k-1,base-hh-k,w-2*k+2,1);           // 지붕
+          if(R()>0.3){ g.fillStyle="#ffb84a"; g.fillRect(x+2+Math.floor(R()*(w-4)),base-hh+2,1,1); }
+          if(R()>0.6){ g.fillStyle="#e08a2a"; g.fillRect(x+2+Math.floor(R()*(w-4)),base-hh+2,1,1); }
+          x+=w+2+Math.floor(R()*4);
+          if(R()>0.5){ g.fillStyle="#08070f"; const th=6+Math.floor(R()*4);                    // 침엽수
+            for(let k=0;k<th;k++) g.fillRect(x+2-Math.floor(k/3),base-th+k,1+2*Math.floor(k/3),1); g.fillRect(x+2,base,1,1); x+=6; }
+        }
+      };
+      const vb=hz+Math.max(3,Math.round((H-hz)*0.12));
+      village(Math.round(W*0.02), Math.round(W*0.27), vb);
+      village(Math.round(W*0.73), Math.round(W*0.99), vb);
+      // 절벽 + 동굴 입구(가운데)
+      const cx=Math.round(W/2), cw=Math.round(Math.min(W*0.46, H*0.95)), top=hz-Math.round(H*0.17);
+      const gy=hz+Math.round((H-hz)*(W/H>1.9?0.55:0.38));               // 동굴 바닥선(가로 폰은 더 아래로)
+      const foot=gy+3;                                                   // 언덕 자락
+      for(let x=Math.round(cx-cw/2);x<=Math.round(cx+cw/2);x++){
+        const u=Math.abs(x-cx)/(cw/2);                                    // 0..1
+        const ty=Math.round(top + Math.pow(u,2.4)*(foot-top) + (R()-0.5)*2);
+        g.fillStyle="#211b2c"; g.fillRect(x,ty,1,foot-ty);
+        g.fillStyle="#3a3048"; g.fillRect(x,ty,1,1);
+        g.fillStyle= R()>0.5 ? "#1e2a24" : "#2a2338"; g.fillRect(x,ty+1,1,1);   // 풀/바위 결
+        if(x&1){ g.fillStyle="#0d0b16"; g.fillRect(x,foot-1,1,1); }
+        for(let y=ty+3;y<foot-1;y+=3+Math.floor(R()*5)){ if(R()>0.55){ g.fillStyle= R()>0.5?"#2a2338":"#181422"; g.fillRect(x,y,1,1); } }
+      }
+      g.fillStyle="#1a1524";                                              // 지층 줄
+      for(let k=1;k<5;k++){ const yy=top+Math.round((gy-top)*k/5)+4; for(let x=cx-cw/2+6;x<cx+cw/2-6;x++) if(((x*7+k*13)%11)<7) g.fillRect(x,yy,1,1); }
+      const aw=Math.max(14,Math.round(Math.min(cw*0.26, H*0.2))), ah=Math.round(aw*0.95);
+      const ax=cx-Math.round(aw/2), ay=gy-ah;
+      g.fillStyle="#030205";
+      for(let y=0;y<ah;y++){ const r=aw/2, dy=Math.max(0,r-y); const half=Math.round(Math.sqrt(Math.max(0,r*r-dy*dy))); g.fillRect(cx-half,ay+y,half*2,1); }
+      g.fillStyle="#0c0812"; for(let y=Math.round(ah*0.55);y<ah;y+=2) g.fillRect(cx-Math.round(aw*0.3)+(y&2),ay+y,Math.round(aw*0.6),1);   // 안쪽 계단
+      // 나무 문틀(마을 동굴 입구와 같은 색)
+      g.fillStyle="#120b08"; g.fillRect(ax-3,ay+Math.round(ah*0.25)-1,3,ah-Math.round(ah*0.25)+1); g.fillRect(ax+aw,ay+Math.round(ah*0.25)-1,3,ah-Math.round(ah*0.25)+1);
+      g.fillStyle="#6b4127"; g.fillRect(ax-2,ay+Math.round(ah*0.25),2,ah-Math.round(ah*0.25)); g.fillRect(ax+aw,ay+Math.round(ah*0.25),2,ah-Math.round(ah*0.25));
+      g.fillStyle="#120b08"; g.fillRect(ax-5,ay+Math.round(ah*0.25)-4,aw+10,4);
+      g.fillStyle="#8a5a34"; g.fillRect(ax-4,ay+Math.round(ah*0.25)-3,aw+8,2);
+      g.fillStyle="#e2b553"; g.fillRect(ax-4,ay+Math.round(ah*0.25)-3,1,1); g.fillRect(ax+aw+3,ay+Math.round(ah*0.25)-3,1,1);
+      // 동굴에서 내려오는 길
+      for(let y=gy;y<H;y++){ const k=(y-gy)/(H-gy+1), half=Math.round(aw*0.35+k*aw*0.5);
+        g.fillStyle="#1a1624"; g.fillRect(cx-half,y,half*2,1);
+        g.fillStyle="#241f30"; for(let x=cx-half+((y*3)%4);x<cx+half;x+=4) g.fillRect(x,y,2,1); }
+      torches.push({x:ax-6,y:ay+Math.round(ah*0.45)},{x:ax+aw+5,y:ay+Math.round(ah*0.45)});
+      for(const t of torches){ g.fillStyle="#120b08"; g.fillRect(t.x-1,t.y,3,5); g.fillStyle="#6b4127"; g.fillRect(t.x,t.y,1,5); }
+    } else {
+      // 프롤로그: 아득한 지평선 실루엣만
+      g.fillStyle="#06050c";
+      let h=H-Math.round(H*0.06);
+      for(let x=0;x<W;x++){ h+=Math.round((rnd(x)()-0.5)*2); h=Math.max(H-Math.round(H*0.1),Math.min(H-2,h)); g.fillRect(x,h,1,H-h); }
+    }
+    return {c, stars, torches, W, H};
+  }
+  function active(){
+    const pr=document.getElementById("prologue"), ti=document.getElementById("title");
+    if(pr && pr.classList.contains("show")) return {cv:document.getElementById("prologueBg"), mode:"sky"};
+    if(ti && !ti.classList.contains("hidden")) return {cv:document.getElementById("titleBg"), mode:"title"};
+    return null;
+  }
+  function frame(){
+    const a=active(); if(!a || !a.cv) return;
+    tick++;
+    const vw=window.innerWidth, vh=window.innerHeight;
+    const P=Math.max(2, Math.round(Math.min(vh, vw*1.4)/200));
+    const W=Math.ceil(vw/P), H=Math.ceil(vh/P), key=a.mode+W+"x"+H;
+    let S=cache[a.mode];
+    if(!S || S.key!==key){ S=build(W,H,a.mode); S.key=key; cache[a.mode]=S; shoot=[]; }
+    const cv=a.cv;
+    if(cv.width!==W || cv.height!==H){ cv.width=W; cv.height=H; }
+    const g=cv.getContext("2d"); g.imageSmoothingEnabled=false;
+    g.drawImage(S.c,0,0);
+    // 별 반짝임
+    for(let i=0;i<3;i++){ const s=S.stars[(tick*7+i*31)%Math.max(1,S.stars.length)]; if(s){ g.fillStyle="#ffffff"; g.fillRect(s.x,s.y,1,1); } }
+    // 별똥별
+    if(Math.random() < (a.mode==="title"?0.03:0.08) && shoot.length<3)
+      shoot.push({x:Math.random()*W*0.9+W*0.1, y:Math.random()*H*0.35, life:10+Math.floor(Math.random()*6)});
+    for(const s of shoot){
+      for(let k=0;k<7;k++){ g.globalAlpha=Math.max(0,(1-k/7))*Math.min(1,s.life/5); g.fillStyle=k===0?"#ffffff":"#ffe6a0"; g.fillRect(Math.round(s.x+k*2),Math.round(s.y-k),1,1); }
+      s.x-=4; s.y+=2; s.life--;
+    }
+    g.globalAlpha=1;
+    shoot=shoot.filter(s=>s.life>0 && s.x>-10 && s.y<H);
+    // 횃불(깜빡이는 불꽃 + 빛)
+    for(let i=0;i<S.torches.length;i++){
+      const t=S.torches[i], f=((tick>>1)+i)%3;
+      g.save(); g.globalCompositeOperation="lighter";
+      const r=14+((tick+i*2)%4);
+      const gr=g.createRadialGradient(t.x,t.y-2,1,t.x,t.y-2,r);
+      gr.addColorStop(0,"rgba(255,150,60,0.45)"); gr.addColorStop(1,"rgba(255,120,40,0)");
+      g.fillStyle=gr; g.fillRect(t.x-r,t.y-2-r,r*2,r*2); g.restore();
+      g.fillStyle="#ff7a1e"; g.fillRect(t.x-1,t.y-3,3,3);
+      g.fillStyle="#ffb43a"; g.fillRect(t.x,t.y-4-(f===1?1:0),1,3);
+      g.fillStyle="#fff2c0"; g.fillRect(t.x,t.y-2,1,1);
+      if(f===2){ g.fillStyle="#ff7a1e"; g.fillRect(t.x+(i?-1:1),t.y-5,1,1); }
+    }
+  }
+  setInterval(frame, 90);
+  return {frame};
+})();
+// 카드/버튼용 픽셀 아이콘 (img.pxi[data-ic])
+const PX_ICONS={
+  heart:[UI_HEART,{o:"#2a0a10",R:"#e8344e",W:"#ffd0d6"}],
+  coin:[UI_COIN,{o:"#5a3a08",Y:"#ffd24a",y:"#c8901a",W:"#fff6c0",d:"#b8860b"}],
+  stairs:[["......oo","......ss","....oooo","....ssss","..oooooo","..ssssss","oooooooo","ssssssss"],{o:"#e2b553",s:"#8a5a2a"}],
+  skull:[["..wwww..",".wwwwww.","wddwwddw","wddwwddw","wwwddwww",".wwwwww.","..wdwd..","..wwww.."],{w:"#e8e0d0",d:"#2a1010"}],
+  star:[["...yy...","...yy...","yyyYYyyy",".yyYYyy.","..yyyy..",".yy..yy.","yy....yy"],{y:"#e2b553",Y:"#fff0b8"}],
+};
+(function initPxIcons(){
+  document.querySelectorAll("img.pxi[data-ic]").forEach(img=>{
+    const d=PX_ICONS[img.dataset.ic]; if(!d) return;
+    const rows=d[0], w=Math.max(...rows.map(r=>r.length)), h=rows.length;
+    const c=document.createElement("canvas"); c.width=w; c.height=h;
+    uiBits(c.getContext("2d"),0,0,rows,d[1]);
+    img.src=c.toDataURL(); img.style.width=(w*2)+"px"; img.style.height=(h*2)+"px";
+  });
+  // 폰: 접힌 리더보드 제목을 탭하면 펼치기/접기
+  const lb=document.getElementById("lbBox"), lt=lb && lb.querySelector(".lbTitle");
+  if(lt) lt.addEventListener("click",()=>lb.classList.toggle("open"));
+})();
 
 // ====================== 리더보드 ======================
 const LB = (function(){
