@@ -1027,70 +1027,161 @@ function bfsDistFrom(sx,sy){
 // ---- 타일 렌더링 (어두운 돌 던전) -------------------------------------
 function px(x,y,w,h,c){ mctx.fillStyle=c; mctx.fillRect(x,y,w,h); }
 
+// v17: 바닥 — 판석(줄눈·모서리 음영) + 해시 기반 균열/조약돌/이끼/뼈/용암 균열 + 벽 그림자. 프리렌더 1회.
 function drawFloor(tx,ty){
   const x=tx*TILE, y=ty*TILE;
   const r=mulberry32(tx*73856093 ^ ty*19349663 ^ torchSeed);
-  const P=curPal();
-  // 베이스 바닥(돌 자갈 / 사막 모래)
-  const base = P.floor[Math.floor(r()*3)];
-  px(x,y,TILE,TILE,base);
-  // 음영 점박이
-  for(let i=0;i<5;i++){
-    const px2=x+Math.floor(r()*TILE), py2=y+Math.floor(r()*TILE);
-    px(px2,py2,2,2, r()>0.5?P.floorDot[0]:P.floorDot[1]);
+  const P=curPal(), F=P.floor;
+  const wallAt=(xx,yy)=> xx<0||yy<0||xx>=MAP_W||yy>=MAP_H||grid[yy][xx]===T.WALL;
+  if(P.sand){
+    // 모래 바닥: 3톤 베이스 + 잔물결 + 모래알 + 가끔 사암 판석
+    px(x,y,TILE,TILE,F[Math.floor(r()*F.length)]);
+    if(r()<0.16){
+      const sx=Math.floor(r()*6), sy=Math.floor(r()*6), sw=7+Math.floor(r()*4), sh=6+Math.floor(r()*3);
+      px(x+sx,y+sy,sw,sh,P.seam); px(x+sx,y+sy,sw-1,sh-1,P.slab);
+      px(x+sx,y+sy,sw-1,1,P.floorHi); px(x+sx+1,y+sy+sh-2,sw-2,1,P.floorLo);
+    }
+    for(let k=0;k<2;k++){
+      if(r()<0.55){
+        const y0=y+2+Math.floor(r()*12), ph=Math.floor(r()*8), len=5+Math.floor(r()*7), x0=x+Math.floor(r()*(16-len+1));
+        for(let i=0;i<len;i++){ const yy=y0+(((i+ph)&7)<4?0:1); if(yy>=y+15) continue;
+          px(x0+i,yy,1,1,P.floorHi); px(x0+i,yy+1,1,1,P.floorLo); }
+      }
+    }
+    for(let i=0;i<5;i++){ px(x+Math.floor(r()*16),y+Math.floor(r()*16),1,1, r()<0.5?P.floorHi:P.floorLo); }
+    if(r()<0.18){ const sx=x+2+Math.floor(r()*11), sy=y+2+Math.floor(r()*11);
+      px(sx,sy,2,2,P.pebble); px(sx,sy,1,1,P.floorHi); px(sx+1,sy+2,2,1,P.floorLo); }
+  } else {
+    // 판석 배치 변형(5종)
+    const vr=r(), v= vr<0.4?0 : 1+Math.floor((vr-0.4)/0.15);
+    const slabs = v===0?[[0,0,16,16]] : v===1?[[0,0,16,8],[0,8,16,8]] : v===2?[[0,0,8,16],[8,0,8,16]]
+                : v===3?[[0,0,8,8],[8,0,8,8],[0,8,16,8]] : [[0,0,16,8],[0,8,8,8],[8,8,8,8]];
+    for(const [sx,sy,sw,sh] of slabs){
+      const c=F[Math.floor(r()*F.length)];
+      px(x+sx,y+sy,sw,sh,P.seam);                      // 줄눈(바탕)
+      px(x+sx,y+sy,sw-1,sh-1,c);                        // 판석 면
+      px(x+sx,y+sy,sw-1,1,P.floorHi);                   // 윗 모서리 빛
+      px(x+sx,y+sy+1,1,sh-2,P.floorHi);                 // 왼 모서리 빛
+      px(x+sx+1,y+sy+sh-2,sw-2,1,P.floorLo);            // 아래 모서리 그늘
+      px(x+sx+sw-2,y+sy+1,1,sh-3,P.floorLo);            // 오른 모서리 그늘
+    }
+    // 잔 점박이
+    for(let i=0;i<4;i++){ px(x+1+Math.floor(r()*13),y+1+Math.floor(r()*13),1,1, r()<0.5?P.floorHi:P.floorLo); }
+    const roll=r();
+    if(roll<0.09){
+      // 균열(지그재그)
+      let cx=x+3+Math.floor(r()*9), cy=y+2+Math.floor(r()*6);
+      for(let k=0;k<5;k++){ px(cx,cy,1,1,P.seam); cx+= (k&1)?(r()<0.5?-1:1):0; cy+=1; if(cx<x+1||cx>x+14) break; }
+    } else if(roll<0.24){
+      // 조약돌
+      const sx=x+2+Math.floor(r()*11), sy=y+2+Math.floor(r()*11);
+      px(sx,sy+2,3,1,P.seam); px(sx,sy,3,2,P.pebble); px(sx,sy,1,1,P.floorHi);
+    }
+    if(P.moss && r()<0.32){
+      // 이끼(줄눈 가장자리를 따라 몇 점)
+      let mx=x+1+Math.floor(r()*12), my=y+(r()<0.5?13:6);
+      for(let k=0;k<5;k++){ px(mx,my,1,1,P.moss[Math.floor(r()*3)]); mx+=Math.floor(r()*3)-1; my+=r()<0.4?-1:0; }
+      px(mx,my,1,1,P.moss[2]);
+    }
+    if(P.bone){
+      const b=r();
+      if(b<0.06){   // 흩어진 뼈
+        const bx=x+3+Math.floor(r()*8), by=y+4+Math.floor(r()*8);
+        px(bx,by+1,6,1,P.seam); px(bx+1,by,4,1,P.bone[0]); px(bx,by-1,1,2,P.bone[1]); px(bx+5,by-1,1,2,P.bone[1]); px(bx+1,by,3,1,P.bone[1]);
+      } else if(b<0.085){   // 작은 해골
+        const bx=x+4+Math.floor(r()*7), by=y+4+Math.floor(r()*7);
+        px(bx,by,4,3,P.bone[0]); px(bx+1,by+3,2,1,P.bone[2]); px(bx,by,4,1,P.bone[1]);
+        px(bx,by+1,1,1,P.seam); px(bx+3,by+1,1,1,P.seam); px(bx,by+4,4,1,P.seam);
+      }
+    }
+    if(P.glow){
+      const gr=r();
+      if(gr<0.2){   // 빛나는 용암 균열
+        let cx=x+2+Math.floor(r()*11), cy=y+1+Math.floor(r()*5);
+        const n=4+Math.floor(r()*6);
+        for(let k=0;k<n;k++){ px(cx,cy,1,1,P.glow[0]); if(k>0&&k<n-1) px(cx,cy,1,1,P.glow[1]); if(k===(n>>1)) px(cx,cy,1,1,P.glow[2]);
+          px(cx+1,cy,1,1,P.seam); cx+= r()<0.5?-1:1; cy+=1; if(cx<x+1||cx>x+14||cy>y+14) break; }
+      } else if(gr<0.3){ px(x+2+Math.floor(r()*12),y+2+Math.floor(r()*12),1,1,P.glow[1]); }   // 불씨 점
+    }
   }
-  if(dungeonTheme==="desert"){
-    // 모래 결 + 잔물결
-    if(r()>0.6){ px(x+2,y+6+Math.floor(r()*4),10,1,"#b89a5e"); }
-    if(r()>0.8){ px(x+5,y+11,6,1,"#d8c088"); }
-    return;
-  }
-  // 균열
-  if(r()>0.78){ px(x+3,y+8,7,1,P.crack); px(x+9,y+9,3,1,P.crack); }
-  // 이끼
-  if(r()>0.84){ px(x+2,y+2,3,2,"#3c5a22"); px(x+5,y+3,2,2,"#4e7a2e"); }
-  // v6: 고대 유적 — 가끔 석판 이음새/룬 문양
-  const roll=r();
-  if(roll>0.90){
-    px(x,y,TILE,1,P.crack); px(x,y,1,TILE,P.crack);
-    px(x+1,y+1,1,1,"#2e2e38");
-  } else if(roll>0.86){
-    const c="#33333e", hi="#46465c";
-    px(x+8,y+4,1,1,c); px(x+7,y+5,3,1,c); px(x+6,y+6,5,1,c); px(x+5,y+7,7,1,c);
-    px(x+6,y+8,5,1,c); px(x+7,y+9,3,1,c); px(x+8,y+10,1,1,c);
-    px(x+8,y+7,1,1,hi); px(x+7,y+6,1,1,hi);
-  } else if(roll>0.83){
-    px(x+TILE-4,y+TILE-4,4,4,P.crack); px(x+TILE-3,y+TILE-3,2,1,"#2b2b34");
-  }
+  // 벽 그림자(위/왼쪽 벽에서 떨어지는 그림자 — 깊이감)
+  if(wallAt(tx,ty-1)){ mctx.fillStyle="rgba(0,0,0,0.42)"; mctx.fillRect(x,y,TILE,2); mctx.fillStyle="rgba(0,0,0,0.22)"; mctx.fillRect(x,y+2,TILE,2); }
+  if(wallAt(tx-1,ty)){ mctx.fillStyle="rgba(0,0,0,0.25)"; mctx.fillRect(x,y+(wallAt(tx,ty-1)?4:0),2,TILE-(wallAt(tx,ty-1)?4:0)); }
 }
 
-// v8: 던전 테마 팔레트 (stone | desert)
+// v8/v17: 던전 테마 팔레트 — 돌 던전은 깊이별 3단계(이끼 석실 1~9 / 지하묘지 10~19 / 용암 현무암 20+), 사막은 사암
 const DUNGEON_PALETTE={
-  stone: { wall:"#3a3a44", wallTop:"#4a4a56", wallBot:"#26262e", seam:"#16161c", seam2:"#1c1c24",
-           floor:["#22222a","#25252d","#1f1f27"], floorDot:["#2b2b34","#191920"], crack:"#15151b" },
-  desert:{ wall:"#a8895a", wallTop:"#c4a972", wallBot:"#7e6438", seam:"#5e4a2a", seam2:"#6e5836",
-           floor:["#c9aa6e","#d2b576","#bfa062"], floorDot:["#d8c088","#a98a52"], crack:"#8a6e42" }
+  stone: { floor:["#35373b","#323438","#383a3e"], floorHi:"#3e4045", floorLo:"#2d2f33", seam:"#232428", pebble:"#46494e",
+           moss:["#2f4a22","#466b2c","#5f8a38"],
+           top:"#585b60", topAlt:"#5c5f64", topHi:"#6e7177", topLo:"#4a4d52", face:"#3c3e44", face2:"#36383e", faceHi:"#4b4e55", faceLo:"#25262b",
+           mortar:"#1c1d21", outline:"#0e0e12", void:"#101014", decor:"moss" },
+  crypt: { floor:["#31363f","#2e333c","#353a44"], floorHi:"#3b414d", floorLo:"#292d36", seam:"#1f222a", pebble:"#454c5a",
+           bone:["#d6d0bf","#b8b2a0","#8c8676"],
+           top:"#56607a", topAlt:"#5a647e", topHi:"#6c7792", topLo:"#4a5268", face:"#373e50", face2:"#323849", faceHi:"#465067", faceLo:"#242835",
+           mortar:"#181b24", outline:"#0b0d13", void:"#0e1016", decor:"web" },
+  magma: { floor:["#2f2728","#2b2324","#332a2a"], floorHi:"#3a3031", floorLo:"#251e1f", seam:"#1a1415", pebble:"#3e3435",
+           glow:["#a8300e","#ff6a1a","#ffd27a"],
+           top:"#4c3d3a", topAlt:"#50413e", topHi:"#614e4a", topLo:"#403331", face:"#302625", face2:"#2b2221", faceHi:"#3d3130", faceLo:"#1d1717",
+           mortar:"#140f0f", outline:"#090606", void:"#0c0909", decor:"ember" },
+  desert:{ sand:true, floor:["#c9aa6e","#cfb174","#c2a366"], floorHi:"#dcc48c", floorLo:"#ad8f56", seam:"#8a6e42", slab:"#bd9f68", pebble:"#a88a58",
+           top:"#c8ad76", topAlt:"#ccb17a", topHi:"#e0c991", topLo:"#b49762", face:"#a4824f", face2:"#9a7a4a", faceHi:"#b9965f", faceLo:"#7a6038",
+           mortar:"#5e4a2a", outline:"#3a2a16", void:"#1a120a", decor:"sand" }
 };
-function curPal(){ return DUNGEON_PALETTE[dungeonTheme] || DUNGEON_PALETTE.stone; }
+function curPal(){
+  if(dungeonTheme==="desert") return DUNGEON_PALETTE.desert;
+  return floorNum>=20 ? DUNGEON_PALETTE.magma : floorNum>=10 ? DUNGEON_PALETTE.crypt : DUNGEON_PALETTE.stone;
+}
+// v17: 벽 — 밝은 윗면(캡) + 어두운 앞면(벽돌) + 1px 외곽선. 아래가 바닥이면 앞면을 보여줌.
 function drawWall(tx,ty){
   const x=tx*TILE, y=ty*TILE;
   const r=mulberry32(tx*83492791 ^ ty*29874357 ^ torchSeed);
   const P=curPal();
-  // 돌/사암 블록 본체
-  px(x,y,TILE,TILE,P.wall);
-  // 윗면 하이라이트 / 아랫면 그림자 (입체감)
-  px(x,y,TILE,3,P.wallTop);
-  px(x,y+TILE-3,TILE,3,P.wallBot);
-  // 벽돌 줄눈
-  px(x,y+TILE-1,TILE,1,P.seam);
-  const off = (ty%2===0)?0:8;
-  px(x+off,y,1,TILE,P.seam);
-  px(x+((off+8)%16),y+8,1,8,P.seam);
-  px(x,y+8,TILE,1,P.seam2);
-  // 얼룩 / 이끼(또는 사막 모래얼룩)
-  for(let i=0;i<3;i++){ if(r()>0.6){ px(x+Math.floor(r()*14),y+Math.floor(r()*14),2,2,P.wallBot); } }
-  if(dungeonTheme==="desert"){ if(r()>0.85){ px(x+2,y+10,3,2,"#caa86a"); } }   // 모래 쌓임
-  else if(r()>0.9){ px(x+2,y+10,3,2,"#3c5a22"); }                               // 이끼
+  const wallAt=(xx,yy)=> xx<0||yy<0||xx>=MAP_W||yy>=MAP_H||grid[yy][xx]===T.WALL;
+  const front=!wallAt(tx,ty+1);
+  const capH=front?5:TILE;
+  // 윗면(캡) — 큰 돌 판 줄눈(행마다 어긋남)
+  px(x,y,TILE,capH,P.top);
+  if(!front){ if(((tx+ty)&1)===0) px(x+1,y+1,TILE-2,TILE-2,P.topAlt||P.top);      // 캡 돌판 톤 변화
+              px(x,y+TILE-1,TILE,1,P.topLo); px(x+TILE-1,y,1,TILE,P.topLo); }
+  for(let i=0;i<3;i++){ px(x+1+Math.floor(r()*14),y+1+Math.floor(r()*(capH-2)),1,1, r()<0.5?P.topHi:P.topLo); }
+  // 캡 가장자리: 바닥과 맞닿은 면은 외곽선 + 안쪽 하이라이트
+  if(!wallAt(tx,ty-1)){ px(x,y,TILE,1,P.outline); px(x,y+1,TILE,1,P.topHi); }
+  else px(x,y,TILE,1,P.topHi);
+  if(!wallAt(tx-1,ty)){ px(x,y,1,capH,P.outline); px(x+1,y+1,1,capH-1,P.topHi); }
+  if(!wallAt(tx+1,ty)){ px(x+TILE-1,y,1,capH,P.outline); px(x+TILE-2,y+1,1,capH-1,P.topLo); }
+  if(front){
+    px(x,y+capH-1,TILE,1,P.topLo);                       // 캡 앞 모서리
+    px(x,y+capH,TILE,1,P.outline);                       // 캡 아래 그늘선
+    // 앞면 벽돌 2단 (y+6..9, y+11..14)
+    px(x,y+capH+1,TILE,TILE-capH-1,P.mortar);
+    for(let row=0;row<2;row++){
+      const by=y+6+row*5, so=((ty+row)&1)?4:0;
+      for(let bx=-8+so; bx<TILE; bx+=8){
+        const x0=Math.max(0,bx), x1=Math.min(TILE,bx+8); if(x1-x0<2) continue;
+        const c=r()<0.35?P.face2:P.face;
+        px(x+x0,by,x1-x0-1,4,c); px(x+x0,by,x1-x0-1,1,P.faceHi); px(x+x0,by+3,x1-x0-1,1,P.faceLo);
+      }
+    }
+    px(x,y+TILE-1,TILE,1,P.faceLo);
+    if(!wallAt(tx-1,ty)) px(x,y+capH,1,TILE-capH,P.outline);
+    if(!wallAt(tx+1,ty)) px(x+TILE-1,y+capH,1,TILE-capH,P.outline);
+    // 테마별 장식
+    const d=r();
+    if(P.decor==="moss" && d<0.3){        // 캡에서 흘러내린 이끼
+      const mx=x+2+Math.floor(r()*10), n=2+Math.floor(r()*3);
+      px(mx,y+capH-1,n+1,1,"#466b2c"); for(let k=0;k<n;k++) px(mx+k,y+capH,1,1+Math.floor(r()*3),k&1?"#2f4a22":"#5f8a38");
+    } else if(P.decor==="web" && d<0.18){ // 거미줄(모서리)
+      const L=(r()<0.5), cx=L?x+1:x+TILE-2, s=L?1:-1;
+      for(let k=0;k<5;k++){ px(cx+s*k,y+capH+1,1,1,"#9aa0ae"); px(cx,y+capH+1+k,1,1,"#9aa0ae"); }
+      px(cx+s*1,y+capH+3,1,1,"#c8ccd6"); px(cx+s*2,y+capH+2,1,1,"#c8ccd6"); px(cx+s*3,y+capH+2,1,1,"#7a8090");
+    } else if(P.decor==="ember" && d<0.22){ // 벽 틈의 용암 빛
+      const cx=x+3+Math.floor(r()*9);
+      px(cx,y+8,1,5,"#7a200a"); px(cx,y+9,1,3,"#ff6a1a"); px(cx,y+10,1,1,"#ffd27a"); px(cx+1,y+11,1,2,"#a8300e");
+    } else if(P.decor==="sand" && d<0.35){  // 벽 밑 모래 더미
+      const sx=x+Math.floor(r()*8), w=5+Math.floor(r()*5);
+      px(sx+1,y+TILE-2,w-2,1,"#d8c088"); px(sx,y+TILE-1,w,1,"#caa86a");
+    }
+  } else if(P.decor==="moss" && r()<0.12){ px(x+3+Math.floor(r()*9),y+3+Math.floor(r()*9),2,1,"#466b2c"); }
 }
 
 function drawExit(tx,ty){
@@ -1120,7 +1211,7 @@ function prerenderDungeon(){
         const ny=ty+dy,nx=tx+dx;
         if(ny>=0&&ny<MAP_H&&nx>=0&&nx<MAP_W&&grid[ny][nx]!==T.WALL){near=true;break;}
       }
-      if(near) drawWall(tx,ty); else px(tx*TILE,ty*TILE,TILE,TILE,"#202028");
+      if(near) drawWall(tx,ty); else px(tx*TILE,ty*TILE,TILE,TILE,curPal().void);
     } else if(t===T.EXIT){ drawExit(tx,ty); }
     else { drawFloor(tx,ty); }
   }
@@ -3278,30 +3369,21 @@ function drawDeepDark(b,x,y){
 }
 
 // 기억을 잃은 망자 — 플레이어와 같은 형상/크기, 몸통은 검고 눈은 초록. 본체 + 분신들.
+const LOST_LOOK={id:"lostsoul", hood:"#1a1a26", top:"#121219", pants:"#0c0c12", shoe:"#08080c", skin:"#2a2a33"};
 function drawLostSoulFigure(x,y,fx,anim,isCore){
+  // v17: 플레이어와 똑같은 실루엣(같은 캐릭터 스프라이트) — 검은 몸 + 초록 눈
   const bobF=Math.floor(anim)%2;
-  const yy=y-(bobF?1:0);
-  // 그림자
-  ctx.fillStyle="rgba(0,0,0,0.35)"; ctx.beginPath(); ctx.ellipse(x,y+7,6,2.5,0,0,6.28); ctx.fill();
-  // 다리
-  ctx.fillStyle="#070710"; ctx.fillRect(x-3,yy+3,2,4); ctx.fillRect(x+1,yy+3,2,4);
-  // 몸통(검정)
-  ctx.fillStyle= isCore? "#0c0c12":"#111119";
-  ctx.fillRect(x-4,yy-3,8,7);
-  // 팔
-  ctx.fillStyle="#0a0a12"; ctx.fillRect(x+(fx<0?-6:4),yy-1,2,4);
-  // 머리(검정)
-  ctx.fillStyle= isCore? "#0c0c12":"#111119";
-  ctx.fillRect(x-3,yy-8,6,5);
-  // 초록 눈
-  ctx.fillStyle=DARK_EYE; 
-  if(fx<0){ ctx.fillRect(x-2,yy-6,2,2); } else { ctx.fillRect(x,yy-6,2,2); }
+  const flip=fx<0, fy=y+6;
+  drawChar(LOST_LOOK, x, fy, 2, bobF?1:2, flip, isCore?1:0.85);
+  const ex = flip ? x-3 : x+2, ey=fy-14;
+  ctx.fillStyle=DARK_EYE; ctx.fillRect(ex,ey,1,1);
+  ctx.fillStyle="rgba(77,255,136,0.35)"; ctx.fillRect(ex-1,ey,3,1); ctx.fillRect(ex,ey-1,1,3);
   // 본체는 살짝 발광 테두리로 구분
   if(isCore){
     ctx.save(); ctx.globalCompositeOperation="lighter";
-    const g=ctx.createRadialGradient(x,yy-2,0,x,yy-2,12);
+    const g=ctx.createRadialGradient(x,fy-10,0,x,fy-10,12);
     g.addColorStop(0,"rgba(77,255,136,0.25)"); g.addColorStop(1,"rgba(77,255,136,0)");
-    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,yy-2,12,0,6.28); ctx.fill(); ctx.restore();
+    ctx.fillStyle=g; ctx.fillRect(x-12,fy-22,24,24); ctx.restore();
   }
 }
 function drawLostSoul(b,x,y){
@@ -3344,137 +3426,212 @@ function drawDarkRemnant(b,x,y){
 }
 
 // 거대 슬라임: 통통한 반투명 젤리, 착지 시 납작
+// ---- v17: 보스 스프라이트 (애니 상태를 양자화해 캐시 → 외곽선/음영/하이라이트, 피격은 흰 실루엣) ----
+const _bossCache=new Map();
+function bossSprite(key,w,h,ol,fn,white){
+  const k=key+"|"+(white?1:0); let s=_bossCache.get(k); if(s) return s;
+  if(white){ s=_whiteSprite(bossSprite(key,w,h,ol,fn,false)); }
+  else { s=_cpuSprite(w,h); fn(s.g,(x,y,ww,hh,c)=>{ s.g.fillStyle=c; s.g.fillRect(x,y,ww,hh); }); outlineSprite(s,ol); s=_toGPU(s); }
+  if(_bossCache.size>160) _bossCache.clear();
+  _bossCache.set(k,s); return s;
+}
+function _bShadow(x,y,rx,ry,a){ ctx.save(); ctx.globalAlpha=a||0.4; pEll(ctx,x,y,rx,ry,"#000"); ctx.restore(); }
 function drawSlimeKing(b,x,y){
-  const sq=b.squish||0;
-  const w=Math.round(20+sq*8), h=Math.round(20-sq*8);
-  ctx.fillStyle="rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(x,y+14,18,5,0,0,Math.PI*2); ctx.fill();
-  // 몸체
-  ctx.fillStyle=bossFlash(b,"#3c6e28","#ffffff");
-  ctx.fillRect(x-w,y-h+6,w*2,h+8);
-  ctx.fillStyle=bossFlash(b,"#5e9c3a","#ffd0d0");
-  ctx.fillRect(x-w,y-h+6,w*2,5);
-  // 반투명 하이라이트
-  ctx.fillStyle="rgba(190,232,154,0.5)"; ctx.fillRect(x-w+4,y-h+9,6,4);
-  // 작은 슬라임 두 마리 머금음
-  ctx.fillStyle="#2a4a18"; ctx.fillRect(x-8,y+2,5,5); ctx.fillRect(x+4,y+4,4,4);
-  // 눈 (왕관 같은 큰 눈)
-  ctx.fillStyle="#0a0a0a"; ctx.fillRect(x-7,y-2,4,4); ctx.fillRect(x+3,y-2,4,4);
-  ctx.fillStyle="#bfe89a"; ctx.fillRect(x-6,y-1,1,1); ctx.fillRect(x+4,y-1,1,1);
-  // 왕관
-  ctx.fillStyle="#ffd24a"; ctx.fillRect(x-8,y-h+2,16,3);
-  ctx.fillRect(x-8,y-h-1,2,3); ctx.fillRect(x-1,y-h-2,2,4); ctx.fillRect(x+6,y-h-1,2,3);
+  const sq=Math.max(0,Math.min(1,b.squish||0)), q=Math.round(sq*4)/4;
+  const warn = b.state==="hopwind" && ((animClock>>2)&1)===1;          // 점프 예고: 깜빡이는 밝은 색
+  const lift = b.state==="hop" ? Math.round(Math.sin(Math.max(0,Math.min(1,1-b.timer/20))*Math.PI)*12) : 0;
+  _bShadow(x,y+14,Math.round(19-lift*0.5),5,0.42);
+  const s=bossSprite("sk|"+q+"|"+warn,64,56,"#0c1a08",(g,R)=>{
+    const ox=32, oy=36;
+    const hw=Math.round(20+q*8), hh=Math.round(20-q*8);
+    const top=oy-hh+6, bot=oy+14, H=bot-top;
+    const P= warn ? {d:"#6a8a1e",m:"#a2cc3a",l:"#d0f070",h:"#ffffe0"} : {d:"#2c5c1c",m:"#4f9a30",l:"#7cc44a",h:"#e0fcc0"};
+    const halfAt=yy=>{ const t=(yy-top)/H; const k = t<0.6 ? Math.sqrt(Math.max(0,1-Math.pow((0.6-t)/0.6,2))) : 1-Math.pow((t-0.6)/0.4,4)*0.14; return Math.max(2,Math.round(hw*k)); };
+    for(let yy=top; yy<bot; yy++){
+      const hf=halfAt(yy);
+      R(ox-hf,yy,hf*2,1,P.m);
+      R(ox+hf-Math.max(2,Math.round(hf*0.3)),yy,Math.max(2,Math.round(hf*0.3)),1,P.d);          // 오른쪽 그늘
+      if(yy-top < H*0.7) R(ox-hf+1,yy,Math.max(1,Math.round(hf*0.32)),1,P.l);                // 왼쪽 빛
+      if(bot-yy<=3) R(ox-hf,yy,hf*2,1,P.d);                                                    // 바닥 그늘
+    }
+    // 젤리 속 작은 슬라임(삼킨 것)
+    pEll(g,ox-9,oy+6,3,2,P.d); pEll(g,ox+8,oy+8,2,2,P.d); R(ox-10,oy+5,1,1,P.l); R(ox+7,oy+7,1,1,P.l);
+    // 광택
+    const hx=ox-Math.round(hw*0.55);
+    R(hx,top+3,5,2,P.h); R(hx-1,top+5,2,3,P.h); R(hx+6,top+3,1,1,P.h);
+    // 큰 눈 + 입
+    const ey=Math.max(top+5, oy-4);
+    for(const ex of [ox-9, ox+3]){ R(ex,ey,6,6,"#f4fff0"); R(ex,ey+5,6,1,"#a8c8a0"); R(ex+2,ey+1,3,4,"#101810"); R(ex+2,ey+1,1,1,"#ffffff"); }
+    R(ox-10,ey-2,5,1,P.d); R(ox+5,ey-2,5,1,P.d);                                               // 눈썹(심술)
+    R(ox-4,ey+8,8,2,"#1a2a12"); R(ox-3,ey+8,2,1,"#f4fff0"); R(ox+2,ey+8,2,1,"#f4fff0");       // 입 + 송곳니
+    // 왕관
+    const cy=top-3;
+    R(ox-9,cy,18,4,"#e8b030"); R(ox-9,cy,18,1,"#fff0a0"); R(ox-9,cy+3,18,1,"#a87010");
+    for(const [cx,ch] of [[-9,4],[-2,6],[6,4]]){ R(ox+cx,cy-ch,3,ch,"#e8b030"); R(ox+cx,cy-ch,1,ch,"#fff0a0"); }
+    R(ox-1,cy+1,2,2,"#e83a4a"); R(ox-1,cy+1,1,1,"#ffb0b8"); R(ox-6,cy+1,1,1,"#4ad0ff"); R(ox+5,cy+1,1,1,"#4ad0ff");
+  }, b.flash>0);
+  ctx.drawImage(s.c, x-32, y-36-lift);
 }
 // 해골 마법사: 두건+해골 얼굴+지팡이, 순간이동 시 반짝
 function drawNecromancer(b,x,y){
-  const bob=Math.sin(b.phase)*2;
+  const bob=Math.round(Math.sin(b.phase)*2);
   const cast=(b.state==="homing"||b.state==="raise");
-  ctx.fillStyle="rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(x,y+13,12,4,0,0,Math.PI*2); ctx.fill();
-  // 로브
-  ctx.fillStyle=bossFlash(b,"#2a1840","#ffffff"); ctx.fillRect(x-10,y-6+bob,20,20);
-  ctx.fillStyle=bossFlash(b,"#3a2456","#ffd0d0"); ctx.fillRect(x-10,y-6+bob,20,5);
-  // 두건
-  ctx.fillStyle="#1a1030"; ctx.fillRect(x-9,y-16+bob,18,11);
-  // 해골 얼굴
-  ctx.fillStyle="#cdc7b8"; ctx.fillRect(x-6,y-13+bob,12,8);
-  ctx.fillStyle="#1a1a1a"; ctx.fillRect(x-4,y-11+bob,3,3); ctx.fillRect(x+2,y-11+bob,3,3);
-  // 눈 마법광
-  const eg = cast? "#c850ff" : "#9a6aff";
-  ctx.fillStyle=eg; ctx.fillRect(x-3,y-10+bob,1,1); ctx.fillRect(x+3,y-10+bob,1,1);
-  // 지팡이 + 보주
-  ctx.strokeStyle="#5a3a2a"; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(x+10,y-2+bob); ctx.lineTo(x+14,y-18+bob); ctx.stroke();
-  ctx.save(); ctx.globalAlpha=0.5+(cast?Math.sin(b.phase*6)*0.3:0);
-  ctx.fillStyle="#9a6aff"; ctx.beginPath(); ctx.arc(x+14,y-19+bob,4,0,Math.PI*2); ctx.fill(); ctx.restore();
-  ctx.fillStyle="#c850ff"; ctx.fillRect(x+13,y-20+bob,2,2);
+  _bShadow(x,y+13,11,3,0.4);
+  const s=bossSprite("nc|"+cast,44,48,"#0c0814",(g,R)=>{
+    const ox=20, oy=30;
+    // 로브(아래로 퍼짐) + 음영 + 금빛 테두리
+    for(let yy=oy-7; yy<oy+14; yy++){ const t=(yy-(oy-7))/21, hf=Math.round(7+t*4);
+      R(ox-hf,yy,hf*2,1,"#3a2456"); R(ox+hf-3,yy,3,1,"#22143a"); R(ox-hf+1,yy,2,1,"#55357a"); }
+    R(ox-11,oy+12,22,2,"#22143a");
+    for(let i=0;i<6;i++) R(ox-10+i*4,oy+13+(i&1),2,1,"#3a2456");                                 // 해진 밑단
+    R(ox-1,oy-4,2,16,"#c8a040"); R(ox-1,oy-4,1,16,"#f0d070");                                     // 앞섶 금줄
+    R(ox-11,oy+10,22,1,"#c8a040");
+    // 두건(뾰족)
+    R(ox-8,oy-17,16,12,"#2a1a40"); R(ox-6,oy-19,12,2,"#2a1a40"); R(ox-3,oy-21,6,2,"#2a1a40"); R(ox-1,oy-22,2,1,"#2a1a40");
+    R(ox-7,oy-17,2,10,"#3e2a5c"); R(ox+5,oy-16,3,11,"#180e2a");
+    // 해골 얼굴
+    R(ox-5,oy-14,10,8,"#dcd6c4"); R(ox-5,oy-14,10,1,"#f4efe0"); R(ox+3,oy-13,2,7,"#a8a090");
+    R(ox-4,oy-12,3,3,"#120a10"); R(ox+1,oy-12,3,3,"#120a10");
+    const eg=cast?"#f080ff":"#9a6aff"; R(ox-3,oy-11,1,1,eg); R(ox+2,oy-11,1,1,eg);
+    R(ox-1,oy-9,2,1,"#5a5248"); R(ox-3,oy-7,6,1,"#8a8272"); R(ox-2,oy-7,1,1,"#dcd6c4"); R(ox+1,oy-7,1,1,"#dcd6c4");
+    // 지팡이 + 뼈 손
+    pLine(g,ox+11,oy+10,ox+15,oy-16,"#5a3a2a"); pLine(g,ox+12,oy+10,ox+16,oy-16,"#7a5238");
+    R(ox+9,oy-2,4,3,"#dcd6c4"); R(ox+9,oy+1,4,1,"#a8a090");
+    R(ox+13,oy-19,5,3,"#3a2a20"); R(ox+14,oy-21,1,2,"#3a2a20"); R(ox+17,oy-21,1,2,"#3a2a20");   // 보주 받침
+  }, b.flash>0);
+  ctx.drawImage(s.c, x-20, y-30+bob);
+  // 보주(빛나는 맥동 — 스프라이트 밖, 픽셀 타원)
+  const ox=x+15, oy=y-21+bob;
+  ctx.save(); ctx.globalAlpha=0.35+(cast?Math.abs(Math.sin(b.phase*6))*0.35:0.1);
+  pEll(ctx,ox,oy,5,5,"#9a6aff"); ctx.restore();
+  ctx.fillStyle="#1a0a24"; ctx.fillRect(ox-2,oy-3,5,1); ctx.fillRect(ox-2,oy+3,5,1); ctx.fillRect(ox-3,oy-2,1,5); ctx.fillRect(ox+3,oy-2,1,5);
+  ctx.fillStyle="#b07aff"; ctx.fillRect(ox-2,oy-2,5,5);
+  ctx.fillStyle=cast?"#ffd0ff":"#d8b0ff"; ctx.fillRect(ox-1,oy-2,2,2);
 }
-// 골렘: 거대한 돌덩이 몸, 룬이 빛남, 내려찍기 시 떨림
+// 골렘: 거대한 돌덩이 몸, 룬이 빛남, 내려찍기 예고(팔 들어올림) / 내려찍기(주먹 바닥)
 function drawGolem(b,x,y){
   const sl=b.slam||0, warn=(b.state==="slamwind"&&Math.floor(b.timer/4)%2===0);
   const jx=(b.state==="throwwind"||warn)?Math.round((Math.random()-0.5)*2):0;
-  ctx.fillStyle="rgba(0,0,0,0.45)"; ctx.beginPath(); ctx.ellipse(x,y+15,18,5,0,0,Math.PI*2); ctx.fill();
-  const body = b.flash>0?"#ffffff":(warn?"#a86a3a":"#6a6a58");
-  // 다리
-  ctx.fillStyle="#4a4a3e"; ctx.fillRect(x-10+jx,y+8,6,7); ctx.fillRect(x+4+jx,y+8,6,7);
-  // 몸통(큰 바위)
-  ctx.fillStyle=body; ctx.fillRect(x-14+jx,y-14,28,24);
-  ctx.fillStyle=b.flash>0?"#ffe0e0":"#8a8a76"; ctx.fillRect(x-14+jx,y-14,28,6);
-  // 갈라진 틈 + 빛나는 룬
-  ctx.fillStyle="#3a3a30"; ctx.fillRect(x-10+jx,y-6,20,1); ctx.fillRect(x-2+jx,y-14,1,24);
-  const rune = sl>0.3? "#ffd24a" : "#ff8a3c";
-  ctx.fillStyle=rune; ctx.fillRect(x-7+jx,y-4,3,3); ctx.fillRect(x+5+jx,y-4,3,3); ctx.fillRect(x-1+jx,y+2,2,2);
-  // 팔(주먹)
-  ctx.fillStyle="#5a5a4a"; ctx.fillRect(x-19+jx,y-8,6,10); ctx.fillRect(x+13+jx,y-8,6,10);
-  // 눈
-  ctx.fillStyle=warn?"#ff3020":"#ffaa3c"; ctx.fillRect(x-8+jx,y-10,4,3); ctx.fillRect(x+4+jx,y-10,4,3);
-  // 내려찍기 충격 링
+  const pose = (b.state==="slamwind"||b.state==="throwwind") ? 1 : (b.state==="slam" ? 2 : 0);
+  const hot = sl>0.3;
+  _bShadow(x,y+15,19,5,0.45);
+  const s=bossSprite("gl|"+pose+"|"+warn+"|"+hot,60,64,"#0e0d0a",(g,R)=>{
+    const ox=30, oy=42;
+    const body=warn?"#86684a":"#6e6c5c", hi=warn?"#a8845e":"#8e8b78", lo=warn?"#5e4430":"#4e4c40", crack="#2e2d26";
+    // 다리
+    for(const lx of [-10,4]){ R(ox+lx,oy+6,7,9,lo); R(ox+lx,oy+6,7,1,body); R(ox+lx+1,oy+7,2,7,body); R(ox+lx-1,oy+13,9,2,lo); }
+    // 몸통(모서리 깎은 바위)
+    R(ox-14,oy-13,28,22,body); R(ox-13,oy-14,26,1,body); R(ox-13,oy+9,26,1,lo);
+    R(ox-14,oy-13,28,5,hi); R(ox-13,oy-14,26,1,hi);                       // 윗면 빛
+    R(ox+8,oy-8,6,17,lo); R(ox-14,oy+5,28,4,lo);                           // 오른쪽/아래 그늘
+    R(ox-13,oy-12,2,14,hi);
+    // 금/균열
+    pLine(g,ox-10,oy-5,ox-3,oy-4,crack); pLine(g,ox-3,oy-4,ox+1,oy-8,crack); pLine(g,ox+2,oy+1,ox+9,oy+3,crack); pLine(g,ox-2,oy-13,ox-1,oy-9,crack);
+    // 이끼(어깨)
+    R(ox-12,oy-15,7,2,"#4e7a2e"); R(ox-10,oy-16,4,1,"#6a9a3a"); R(ox+6,oy-15,5,2,"#4e7a2e"); R(ox-12,oy-13,2,2,"#3a5a22");
+    // 룬(가슴)
+    const rune = warn ? "#ff4a2a" : hot ? "#ffe07a" : "#ff8a3c", runeHi = hot?"#ffffff":"#ffd08a";
+    R(ox-7,oy-3,3,3,rune); R(ox+5,oy-3,3,3,rune); R(ox-1,oy+2,2,4,rune); R(ox-3,oy+3,6,1,rune);
+    R(ox-6,oy-2,1,1,runeHi); R(ox+6,oy-2,1,1,runeHi);
+    // 눈
+    const eye=warn?"#ff3020":"#ffaa3c";
+    R(ox-9,oy-10,5,3,"#1a1410"); R(ox+4,oy-10,5,3,"#1a1410"); R(ox-8,oy-9,3,2,eye); R(ox+5,oy-9,3,2,eye); R(ox-8,oy-9,1,1,"#fff0c0"); R(ox+5,oy-9,1,1,"#fff0c0");
+    // 팔/주먹 (자세별)
+    for(const sd of [-1,1]){
+      const ax = sd<0 ? ox-21 : ox+14;
+      if(pose===1){        // 들어올림(예고)
+        R(ax+1,oy-22,6,12,body); R(ax+1,oy-22,6,1,hi); R(ax+(sd<0?1:5),oy-21,2,11,lo);
+        R(ax,oy-30,8,8,body); R(ax,oy-30,8,2,hi); R(ax+(sd<0?0:6),oy-28,2,6,lo); R(ax+2,oy-25,4,1,crack);
+      } else if(pose===2){ // 내려찍음
+        R(ax+1,oy-8,6,12,body); R(ax+(sd<0?1:5),oy-8,2,12,lo);
+        R(ax-1,oy+4,10,8,body); R(ax-1,oy+4,10,2,hi); R(ax-1,oy+10,10,2,lo); R(ax+2,oy+7,5,1,crack);
+      } else {
+        R(ax+1,oy-10,6,11,body); R(ax+1,oy-10,6,2,hi); R(ax+(sd<0?1:5),oy-8,2,9,lo);
+        R(ax,oy+1,8,7,body); R(ax,oy+1,8,2,hi); R(ax,oy+6,8,2,lo); R(ax+2,oy+4,4,1,crack);
+      }
+    }
+  }, b.flash>0);
+  ctx.drawImage(s.c, x-30+jx, y-42);
+  // 내려찍기 충격 링(픽셀 점 링)
   if(b.state==="slam" && sl>0.2){
-    ctx.globalAlpha=sl*0.6; ctx.strokeStyle="#caa84a"; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(x,y+6,(1-sl)*50+10,0,Math.PI*2); ctx.stroke(); ctx.globalAlpha=1;
+    const rr=(1-sl)*50+10, n=Math.max(16,Math.round(rr*1.2));
+    ctx.save(); ctx.globalAlpha=sl*0.7; ctx.fillStyle="#e8c86a";
+    for(let i=0;i<n;i++){ const a=i/n*Math.PI*2; ctx.fillRect(Math.round(x+Math.cos(a)*rr)-1, Math.round(y+6+Math.sin(a)*rr*0.6)-1, 2,2); }
+    ctx.restore();
   }
 }
-// 맹독 버섯: 거대한 독버섯 — 보라/붉은 갓 + 반점 + 포자 오라
+// 맹독 버섯: 거대한 독버섯 — 보라 갓 + 반점 + 포자 오라, 포자 방사 예고 시 반점이 초록으로 깜빡
 function drawMushroomKing(b,x,y){
-  const pulse=Math.sin(b.phase*2)*1.5;
+  const pf=Math.round((Math.sin(b.phase*2)+1)); // 0..2 (숨쉬기)
   const charging=(b.state==="sporeburst");
+  const glow = charging && ((animClock>>2)&1)===1;
   // 포자 오라
   ctx.save(); ctx.globalCompositeOperation="lighter";
   const g=ctx.createRadialGradient(x,y,2,x,y,36);
   g.addColorStop(0,"rgba(126,224,106,"+(charging?0.45:0.28)+")"); g.addColorStop(1,"rgba(126,224,106,0)");
-  ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,36,0,6.28); ctx.fill(); ctx.restore();
-  ctx.fillStyle="rgba(0,0,0,0.4)"; ctx.beginPath(); ctx.ellipse(x,y+16,18,5,0,0,Math.PI*2); ctx.fill();
-  // 줄기(통통)
-  ctx.fillStyle=bossFlash(b,"#dcd2b6","#ffffff"); ctx.fillRect(x-9,y-2,18,18);
-  ctx.fillStyle="#c2b896"; ctx.fillRect(x-9,y-2,5,18);
-  // 줄기 무늬(독 자국)
-  ctx.fillStyle="#7a9a4a"; ctx.fillRect(x-3,y+4,3,3); ctx.fillRect(x+3,y+9,2,2);
-  // 갓(돔)
-  ctx.fillStyle=bossFlash(b,"#7a2a8a","#ffffff");
-  ctx.beginPath(); ctx.moveTo(x-23,y-1); ctx.quadraticCurveTo(x,y-30+pulse,x+23,y-1); ctx.closePath(); ctx.fill();
-  // 갓 밝은 윗부분
-  ctx.fillStyle=bossFlash(b,"#a23ab2","#ffd0ff");
-  ctx.beginPath(); ctx.moveTo(x-18,y-8); ctx.quadraticCurveTo(x,y-28+pulse,x+18,y-8); ctx.closePath(); ctx.fill();
-  // 반점
-  ctx.fillStyle="#ecdca4";
-  ctx.beginPath(); ctx.arc(x-11,y-9,3.2,0,6.28); ctx.fill();
-  ctx.beginPath(); ctx.arc(x+9,y-7,4,0,6.28); ctx.fill();
-  ctx.beginPath(); ctx.arc(x-1,y-15,2.6,0,6.28); ctx.fill();
-  ctx.beginPath(); ctx.arc(x+15,y-3,2.2,0,6.28); ctx.fill();
-  // 눈
-  ctx.fillStyle="#101010"; ctx.fillRect(x-6,y+2,3,4); ctx.fillRect(x+3,y+2,3,4);
-  ctx.fillStyle="#7ee06a"; ctx.fillRect(x-5,y+3,1,1); ctx.fillRect(x+4,y+3,1,1);
+  ctx.fillStyle=g; ctx.fillRect(x-36,y-36,72,72); ctx.restore();
+  _bShadow(x,y+16,18,5,0.42);
+  const s=bossSprite("mk|"+pf+"|"+glow,60,60,"#140814",(g,R)=>{
+    const ox=30, oy=40;
+    // 줄기
+    for(let yy=oy-2; yy<oy+16; yy++){ const hf= yy>oy+12 ? 10 : 9; R(ox-hf,yy,hf*2,1,"#e2d8bc"); R(ox+hf-4,yy,4,1,"#b8ac8a"); R(ox-hf,yy,2,1,"#f4ecd6"); }
+    R(ox-10,oy+15,20,1,"#9a8e6e");
+    R(ox-4,oy+9,3,3,"#7a9a4a"); R(ox+3,oy+12,2,2,"#7a9a4a"); R(ox-6,oy+13,2,1,"#5a7a34");
+    // 얼굴
+    R(ox-7,oy+1,4,5,"#101010"); R(ox+3,oy+1,4,5,"#101010"); R(ox-6,oy+2,1,1,"#7ee06a"); R(ox+4,oy+2,1,1,"#7ee06a");
+    R(ox-8,oy,5,1,"#6a5a40"); R(ox+3,oy,5,1,"#6a5a40"); R(ox-3,oy+8,6,1,"#3a2a20");
+    // 주름(갓 밑면)
+    R(ox-20,oy-3,40,3,"#4a1a3a"); for(let i=-18;i<=18;i+=3) R(ox+i,oy-3,1,3,"#2e0e24");
+    // 갓(돔)
+    const base=oy-3, peak=oy-30+pf, H=base-peak;
+    for(let yy=peak; yy<base; yy++){ const t=(base-yy)/H, hf=Math.max(2,Math.round(24*Math.sqrt(Math.max(0,1-t*t))));
+      R(ox-hf,yy,hf*2,1,"#8e2f9e"); R(ox+hf-Math.round(hf*0.3),yy,Math.round(hf*0.3),1,"#5e1a6a");
+      if(t>0.25) R(ox-hf+1,yy,Math.max(1,Math.round(hf*0.4)),1,"#b84ac8"); }
+    R(ox-23,base-2,46,2,"#5e1a6a");
+    R(ox-12,peak+3,6,1,"#e070f0"); R(ox-15,peak+5,3,2,"#e070f0");                    // 광택
+    // 반점
+    const sp=glow?"#b8ff8a":"#f0e2b4", spS=glow?"#6ad04a":"#c8b88a";
+    for(const [sx,sy,sr] of [[-11,-10,3],[9,-8,4],[-1,-19,2],[15,-4,2],[-17,-4,2]]){ pEll(g,ox+sx,oy+sy+pf,sr,sr-1,sp); R(ox+sx-sr+1,oy+sy+pf+sr-1,sr*2-1,1,spS); }
+  }, b.flash>0);
+  ctx.drawImage(s.c, x-30, y-40);
 }
-// 거미 여왕: 거대 검은 거미 — 붉은 모래시계 무늬 + 작은 왕관 + 다리 8개
+// 거미 여왕: 거대 검은 거미 — 붉은 모래시계 무늬 + 작은 왕관 + 다리 8개, 돌진 예고 시 눈이 타오름
 function drawSpiderQueen(b,x,y){
-  const lp=b.legPh||0;
-  ctx.fillStyle="rgba(0,0,0,0.45)"; ctx.beginPath(); ctx.ellipse(x,y+14,20,6,0,0,Math.PI*2); ctx.fill();
-  // 다리 8개(좌우 4쌍)
-  ctx.strokeStyle=bossFlash(b,"#0e0e12","#ffffff"); ctx.lineWidth=3; ctx.lineCap="round";
-  for(let i=0;i<4;i++){
-    const off=Math.sin(lp+i*0.7)*3;
-    for(const s of [-1,1]){
-      ctx.beginPath();
-      ctx.moveTo(x, y-2);
-      ctx.lineTo(x+s*(13+i*2), y-7+i*5+off);
-      ctx.lineTo(x+s*(22+i*3), y-1+i*6+off);
-      ctx.stroke();
+  const lf=Math.floor(((b.legPh||0)%(Math.PI*2))/(Math.PI/2))&3;
+  const dashw = b.state==="dashwind";
+  const jx = dashw ? Math.round((Math.random()-0.5)*2) : 0;
+  _bShadow(x,y+14,22,6,0.45);
+  const s=bossSprite("sq|"+lf+"|"+dashw,72,60,"#08060a",(g,R)=>{
+    const ox=36, oy=30, lp=lf*Math.PI/2;
+    // 다리 8개(2px 두께, 관절 하이라이트)
+    for(let i=0;i<4;i++){
+      const off=Math.round(Math.sin(lp+i*0.7)*3);
+      for(const sd of [-1,1]){
+        const kx=ox+sd*(13+i*2), ky=oy-7+i*5+off, fx2=ox+sd*(22+i*3), fy2=oy-1+i*6+off;
+        pLine(g,ox+sd*4,oy-2+i,kx,ky,"#241c22"); pLine(g,ox+sd*4,oy-1+i,kx,ky+1,"#241c22");
+        pLine(g,kx,ky,fx2,fy2,"#241c22"); pLine(g,kx+sd,ky,fx2+sd,fy2,"#241c22");
+        R(kx,ky,1,1,"#5a4a56"); R(fx2,fy2,1,1,"#100c10");
+      }
     }
-  }
-  ctx.lineCap="butt";
-  // 복부(큰 타원)
-  ctx.fillStyle=bossFlash(b,"#1a1410","#ffffff"); ctx.beginPath(); ctx.ellipse(x,y+3,16,13,0,0,6.28); ctx.fill();
-  // 붉은 모래시계
-  ctx.fillStyle="#c0303a";
-  ctx.beginPath(); ctx.moveTo(x-5,y-2); ctx.lineTo(x+5,y-2); ctx.lineTo(x,y+4); ctx.closePath(); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(x-5,y+10); ctx.lineTo(x+5,y+10); ctx.lineTo(x,y+4); ctx.closePath(); ctx.fill();
-  // 머리(앞쪽)
-  ctx.fillStyle=bossFlash(b,"#241c16","#ffd0d0"); ctx.beginPath(); ctx.arc(x,y-11,8,0,6.28); ctx.fill();
-  // 여러 눈(붉게 빛남)
-  ctx.fillStyle="#ff3a3a";
-  ctx.fillRect(x-5,y-14,2,2); ctx.fillRect(x+3,y-14,2,2);
-  ctx.fillRect(x-3,y-12,2,2); ctx.fillRect(x+1,y-12,2,2);
-  // 작은 왕관(여왕)
-  ctx.fillStyle="#ffd24a"; ctx.fillRect(x-6,y-21,12,2);
-  ctx.fillRect(x-6,y-24,2,3); ctx.fillRect(x-1,y-25,2,4); ctx.fillRect(x+4,y-24,2,3);
+    // 복부
+    pEll(g,ox,oy+3,16,13,"#1e1820"); pEll(g,ox-2,oy+1,13,10,"#2e2632"); pEll(g,ox-5,oy-3,6,4,"#40363e");
+    R(ox-8,oy-6,3,1,"#5a4e58"); R(ox+12,oy+4,2,6,"#141016");
+    // 붉은 모래시계
+    for(let k=0;k<5;k++){ R(ox-5+k,oy-2+k,10-k*2,1,"#c0303a"); R(ox-5+k,oy+10-k,10-k*2,1,"#c0303a"); }
+    R(ox-4,oy-2,3,1,"#ff6a6a"); R(ox,oy+4,1,1,"#ff8a8a");
+    // 머리
+    pEll(g,ox,oy-11,8,7,"#241c16"); pEll(g,ox-2,oy-13,5,4,"#3a2e28");
+    // 눈(여러 개)
+    const eye=dashw?"#ffe07a":"#ff3a3a", eyeHi=dashw?"#ffffff":"#ffb0a0";
+    for(const [ex,ey] of [[-5,-14],[3,-14],[-3,-12],[1,-12],[-7,-11],[5,-11]]){ R(ox+ex,oy+ey,2,2,eye); R(ox+ex,oy+ey,1,1,eyeHi); }
+    // 송곳니
+    R(ox-3,oy-5,2,3,"#e8e0d0"); R(ox+1,oy-5,2,3,"#e8e0d0"); R(ox-3,oy-3,1,1,"#a89888"); R(ox+2,oy-3,1,1,"#a89888");
+    // 왕관
+    R(ox-6,oy-21,12,3,"#e8b030"); R(ox-6,oy-21,12,1,"#fff0a0"); R(ox-6,oy-19,12,1,"#a87010");
+    for(const cx of [-6,-1,4]){ const ch=cx===-1?4:3; R(ox+cx,oy-21-ch,2,ch,"#e8b030"); R(ox+cx,oy-21-ch,1,ch,"#fff0a0"); }
+    R(ox-1,oy-20,2,1,"#e83a4a");
+  }, b.flash>0);
+  ctx.drawImage(s.c, x-36+jx, y-30);
 }
 function drawEnemyShots(){
   for(const s of enemyShots){
@@ -3572,15 +3729,37 @@ function drawPuzzleHud(){
 }
 function drawBossBar(){
   if(!boss||!boss.alive) return;
+  // v17: uiPanel 틀 + 이름판 + 고정 빨강 게이지(금테) + 늦게 따라오는 옅은 '피해 잔상'
   uctx.save(); uctx.scale(UIS,UIS);
-  const w=200, h=10, x=(CW-w)/2, y=CH-26;
-  uctx.fillStyle="#000"; uctx.fillRect(x-2,y-2,w+4,h+4+12);
-  uctx.fillStyle="#1a1020"; uctx.fillRect(x,y,w,h);
-  const ratio=Math.max(0,boss.hp)/boss.hpMax;
-  uctx.fillStyle=boss.color||"#c850ff"; uctx.fillRect(x,y,w*ratio,h);
-  uctx.fillStyle="rgba(255,255,255,0.4)"; uctx.fillRect(x,y,w*ratio,2);
-  uctx.fillStyle="#ffd24a"; uctx.font='9px "Galmuri9", monospace'; uctx.textAlign="center";
-  uctx.fillText(boss.name||"보스", CW/2, y+h+10); uctx.textAlign="left";
+  const ratio=Math.max(0,Math.min(1,boss.hp/boss.hpMax));
+  const now=performance.now();
+  if(boss._barLag===undefined || boss._barLag<ratio){ boss._barLag=ratio; boss._barT=now; }
+  const dt=Math.min(100, now-(boss._barT||now)); boss._barT=now;
+  if(boss._barLag>ratio) boss._barLag=Math.max(ratio, boss._barLag-dt*0.0005);   // 잔상이 천천히 따라옴
+  // 위치: 넓은 화면은 상단 중앙(HP 패널 x4~136·코인 패널 사이), 좁은 화면(세로 모바일)은 하단 중앙
+  const w=Math.min(136, CW-16), h=24;
+  const x=Math.round((CW-w)/2);
+  const top = CW>=380;
+  const y = top ? 13 : CH-h-6;
+  uiPanel(uctx,x,y,w,h,{alpha:0.96});
+  // 이름판
+  uctx.font='8px "Galmuri7", monospace'; uctx.textAlign="center"; uctx.textBaseline="top";
+  const nm=boss.name||"보스";
+  uctx.fillStyle="#1a100a"; uctx.fillText(nm, CW/2, y+4);
+  uctx.fillStyle="#ffe6a0"; uctx.fillText(nm, CW/2, y+3);
+  // 게이지
+  const bx=x+5, by=y+14, bw=w-10, bh=5;
+  uctx.fillStyle="#b8862a"; uctx.fillRect(bx-1,by-1,bw+2,bh+2);           // 금테
+  uctx.fillStyle="#ffe08a"; uctx.fillRect(bx-1,by-1,bw+2,1);
+  uctx.fillStyle="#6a4410"; uctx.fillRect(bx-1,by+bh,bw+2,1);
+  uctx.fillStyle="#240a0e"; uctx.fillRect(bx,by,bw,bh);                    // 빈 칸
+  const lagW=Math.round(bw*boss._barLag), fillW=Math.round(bw*ratio);
+  uctx.fillStyle="#f4d8c8"; uctx.fillRect(bx,by,lagW,bh);                  // 피해 잔상(옅은 색)
+  uctx.fillStyle="#d8303f"; uctx.fillRect(bx,by,fillW,bh);                 // 고정 빨강
+  uctx.fillStyle="#ff8a94"; uctx.fillRect(bx,by,fillW,1);
+  uctx.fillStyle="#8e1626"; uctx.fillRect(bx,by+bh-1,fillW,1);
+  uctx.fillStyle="rgba(0,0,0,0.3)"; for(let i=1;i<10;i++) uctx.fillRect(bx+Math.round(bw*i/10),by+1,1,bh-2);
+  uctx.textAlign="left"; uctx.textBaseline="alphabetic";
   uctx.restore();
 }
 let bossCleared=false;
@@ -4136,20 +4315,20 @@ function drawPlayer(sx,sy){
   // 무적 시간엔 깜빡임
   if(player.inv>0 && Math.floor(player.inv/4)%2===0) return;
   ctx.save();
-  if(player.eInvis>0) ctx.globalAlpha = 0.35;   // 투명 상태 반투명
-  const x=Math.round(sx)-8, y=Math.round(sy)-9, f=player.frame, d=player.dir;
-  // 몸/머리 (고정)
-  ctx.fillStyle="#3b2f52"; ctx.fillRect(x+5,y+8,6,7);          // 망토
-  ctx.fillStyle="#2a2140"; ctx.fillRect(x+5,y+8,6,2);
-  ctx.fillStyle="#1d1830";                                     // 다리(걷기)
-  ctx.fillRect(x+5,y+15-f, 2,2); ctx.fillRect(x+9,y+13+f, 2,2);
-  ctx.fillStyle="#4a3a66"; ctx.fillRect(x+5,y+2,6,6);          // 후드
-  ctx.fillStyle="#0a0810"; ctx.fillRect(x+6,y+4,4,3);          // 얼굴 그림자
-  ctx.fillStyle="#cdb89a"; ctx.fillRect(x+7+(d>0?1:0),y+5,1,1);// 눈빛
+  const alpha = player.eInvis>0 ? 0.35 : 1;      // 투명 상태 반투명
+  if(alpha<1) ctx.globalAlpha = alpha;
+  // v17: 마을과 같은 캐릭터 스프라이트(PLAYER_LOOK) — 방향(앞/뒤/옆) + 걷기 프레임
+  const fx=player.fx||0, fy=player.fy||0, d=player.dir;
+  const dir = Math.abs(fy)>Math.abs(fx) ? (fy<0?1:0) : 2;
+  const flip = dir===2 && (fx<0 || (fx===0 && d<0));
+  const moving = player._dlx!==undefined && (Math.abs(player.x-player._dlx)>0.01 || Math.abs(player.y-player._dly)>0.01);
+  player._dlx=player.x; player._dly=player.y;
+  const leg = moving ? (player.frame?1:2) : 0;
+  const bx=Math.round(sx), by=Math.round(sy)+6;   // 발 위치
 
   // ── 휘두르는 팔 + 무기 ──
   const W=curWeapon();
-  const shoulderX=sx, shoulderY=sy+1;
+  const shoulderX=sx, shoulderY=sy-3;            // v17: 새 몸통(가슴 높이)에 맞춤
   let baseAng = Math.atan2(player.ay||0, player.ax||d);
   // 공격 진행도: attack.t(W.motion→0)로 매 프레임 부드럽게 보간
   const prog = attack.active ? (1 - attack.t/W.motion) : 0;
@@ -4174,8 +4353,16 @@ function drawPlayer(sx,sy){
   }
   const hx = shoulderX + Math.cos(ang)*armLen;
   const hy = shoulderY + Math.sin(ang)*armLen;
-  ctx.fillStyle="#cdb89a"; ctx.fillRect(Math.round(hx)-1,Math.round(hy)-1,2,2);
-  drawWeaponInHand(ctx,hx,hy,ang,W);
+  // 무기가 몸 뒤쪽(위)을 향하면 몸보다 먼저 그려 가려지게
+  const behind = Math.sin(ang) < -0.35;
+  const drawArm=()=>{
+    ctx.fillStyle="#1a1014"; ctx.fillRect(Math.round(hx)-2,Math.round(hy)-2,4,4);   // 손 외곽선
+    ctx.fillStyle=PLAYER_LOOK.skin; ctx.fillRect(Math.round(hx)-1,Math.round(hy)-1,2,2);
+    drawWeaponInHand(ctx,hx,hy,ang,W);
+  };
+  if(behind) drawArm();
+  drawChar(PLAYER_LOOK, bx, by, dir, leg, flip, alpha);
+  if(!behind) drawArm();
   ctx.restore();
 }
 
@@ -5005,6 +5192,7 @@ function drawFireworks(){
 // 적 처치: 죽음 처리 + 점수 + 효과음 (중복 가산 방지)
 function killEnemy(e){
   if(!e.alive) return;
+  e.deathT=animClock; hitStopT=Math.max(hitStopT,3);   // v17: 처치 순간 흰 번쩍 + 타격 경직
   // 독버섯: 죽어도 포자가 3초에 걸쳐 서서히 사라짐
   if(e.type==="mushroom" && e.dyingT===0){
     e.dyingT=180; e.hp=0;
@@ -5202,33 +5390,50 @@ function drawWarpPortal(sx,sy){
   ctx.fillText("층 이동", x, y-20); ctx.textAlign="left";
 }
 
-// ---- 데미지 팝업 (몬스터=파랑 +N / 플레이어=빨강 -N) ------------------
+// ---- 데미지 팝업 (v17: 픽셀 숫자 — 적 피해=흰/노랑, 플레이어 피해=빨강 -N, 회복=초록 +N) ----
 let dmgPops=[];
 function popDmg(x,y,amount,kind){
-  const isHit = (kind==="hit");
   const n=Math.max(1, Math.round(amount));
-  dmgPops.push({ x:x+(Math.random()*8-4), y:y-4, vy:-0.7, life:40,
-    text:(isHit?"+":"-")+n, color:isHit?"#7fd0ff":"#ff5a5a", big:!isHit });
+  let text, color;
+  if(kind==="hit"){ text=""+n; color = n>=10 ? "y" : "w"; }        // 적에게 준 피해: 부호 없음
+  else if(kind==="heal"){ text="+"+n; color="g"; }
+  else { text="-"+n; color="r"; }                                  // 플레이어가 받은 피해
+  dmgPops.push({ x:x+(Math.random()*8-4), y:y-4, vy:-0.7, life:40, text, color, big:kind!=="hit" });
   if(dmgPops.length>64) dmgPops.shift();
 }
 function updateDmgPops(){
   for(const d of dmgPops){ d.y+=d.vy; d.vy*=0.90; d.life--; }
   if(dmgPops.length) dmgPops=dmgPops.filter(d=>d.life>0);
 }
+// 3x5 픽셀 숫자 글꼴
+const DMG_GLYPH={"0":"111101101101111","1":"010110010010111","2":"111001111100111","3":"111001111001111","4":"101101111001001",
+  "5":"111100111001111","6":"111100111101111","7":"111001010010010","8":"111101111101111","9":"111101111001111",
+  "-":"000000111000000","+":"000010111010000"};
+const DMG_COL={ w:["#ffffff","#d8dce8"], y:["#fff27a","#f0b020"], r:["#ff7a6a","#d8303a"], g:["#a8ff9a","#3ec85a"] };
+const _dmgCache=new Map();
+function dmgSprite(text,col,scale){
+  const key=text+"|"+col+"|"+scale; let s=_dmgCache.get(key); if(s) return s;
+  const cw=4*scale, w=text.length*cw-scale+2, h=5*scale+2;
+  s=_cpuSprite(w,h); const g=s.g, C=DMG_COL[col]||DMG_COL.w;
+  for(let i=0;i<text.length;i++){ const gl=DMG_GLYPH[text[i]]; if(!gl) continue;
+    for(let yy=0;yy<5;yy++) for(let xx=0;xx<3;xx++) if(gl[yy*3+xx]==="1"){
+      g.fillStyle = yy>=3 ? C[1] : C[0]; g.fillRect(1+i*cw+xx*scale, 1+yy*scale, scale, scale); } }
+  outlineSprite(s,"#1a0e10"); s=_toGPU(s);
+  if(_dmgCache.size>200) _dmgCache.clear();
+  _dmgCache.set(key,s); return s;
+}
 function drawDmgPops(){
   if(!dmgPops.length) return;
-  ctx.textAlign="center";
   for(const d of dmgPops){
     const sx=Math.round(d.x-cam.x), sy=Math.round(d.y-cam.y);
     if(sx<-24||sx>CW+24||sy<-24||sy>CH+24) continue;
+    const age=40-d.life;
+    const scale = age<4 ? 2 : 1;                 // 팝: 처음 4프레임은 2배로 튀어나옴
+    const s=dmgSprite(d.text, d.color||"w", scale);
     ctx.globalAlpha=Math.min(1, d.life/12);
-    ctx.font=(d.big?'9px':'8px')+' "Galmuri7", monospace';
-    ctx.fillStyle="rgba(0,0,0,0.75)";                         // 외곽선(4방향)
-    ctx.fillText(d.text,sx-1,sy); ctx.fillText(d.text,sx+1,sy);
-    ctx.fillText(d.text,sx,sy-1); ctx.fillText(d.text,sx,sy+1);
-    ctx.fillStyle=d.color; ctx.fillText(d.text,sx,sy);
+    ctx.drawImage(s.c, sx-(s.w>>1), sy-s.h+1);
   }
-  ctx.globalAlpha=1; ctx.textAlign="left";
+  ctx.globalAlpha=1;
 }
 
 // ---- 마법 투사체 -------------------------------------------------------
@@ -5688,78 +5893,173 @@ function drawCrackedWalls(){
     ctx.fillStyle="rgba(140,30,30,0.25)"; ctx.fillRect(x+7,y+6,2,4);
   }
 }
+// ---- v17: 적 스프라이트 (도트맵 → 1px 외곽선·음영·하이라이트, 오프스크린 캐시) ----
+// 키: 종류|프레임|변이(색조 3단계·사막)|흰색(피격) — 한 번 만들면 drawImage 한 번으로 끝
+const _enemyCache=new Map();
+let hitStopT=0;   // v17: 처치 시 타격 경직(월드 스텝만 2~3프레임 건너뜀, 물리 계산은 그대로)
+const ENEMY_MAPS={
+  slime:[
+    [ "...llllll...", ".llmmmmmmll.", "lhhmmmmmmmml", "lhmmwmmmwmmd", "lmmmemmmemmd", "mmmmmmmmmmmd", "dmmmmmmmmmdd", ".dddddddddd." ],
+    [ "...llll...", "..lmmmml..", ".lhmmmmml.", ".lhmmmmmd.", "lhmwmmwmmd", "lmmemmemmd", "lmmmmmmmmd", "mmmmmmmmmd", ".dmmmmmmd.", ".ddmmmmdd.", "..dddddd.." ],
+    [ "....llllll....", "..llmmmmmmll..", ".lhhmwmmmwmml.", "lhmmmemmmemmmd", "dmmmmmmmmmmmdd", ".dddddddddddd." ]
+  ],
+  bat:[
+    [ "w....d...d....w", "Ww...bdbdb...wW", ".Ww.bBeBeBb.wW.", ".WwwbBBBBBbwwW.", "..Wwbbfbfbbww..", "....dbbbbbd....", ".....ddddd.....", "..............." ],
+    [ ".....d...d.....", ".....bdbdb.....", "....bBeBeBb....", "WWwwbBBBBBbwwWW", ".WwwbbfbfbbwwW.", "..w.dbbbbbd.w..", ".....ddddd.....", "..............." ],
+    [ ".....d...d.....", ".....bdbdb.....", "....bBeBeBb....", "...wbBBBBBbw...", "..WwbbfbfbbwW..", ".Ww.dbbbbbd.wW.", "Ww...ddddd...wW", "w.............w" ]
+  ],
+  skeleton:[
+    [ "..ooooo....", ".oooooos...", ".orkorks.b.", ".okkokks..B", "..sokos.t.b",
+      "..sosos.t.b", "....o...t.b", "..sooos.t.b", ".ooskssooob", "..sooos.t.b",
+      "..okoko.t.b", "...sos..t.b", "...ooo..tB.", "..o...o.b..", "..o...o....", ".oo...oo..." ],
+    [ "...........", "..ooooo....", ".oooooos...", ".orkorks.b.", ".okkokks..B",
+      "..sokos.t.b", "..sosos.t.b", "....o...t.b", "..sooos.t.b", ".ooskssooob",
+      "..sooos.t.b", "..okoko.t.b", "...sos..tB.", "...ooo..b..", "...o..o....", "..oo..oo..." ]
+  ],
+  spiderBody:[ "..bbb..", ".bBBbb.", "bBbbbbd", "bbbRbbd", ".bbRbd.", ".dhhhd.", ".heEeh.", "..hhh.." ],
+  mushroom:[ "....ccccc....", "..ccCCCCCcc..", ".cCCssCCCCcc.", ".cCsSSCCsCck.", "cCCCSCCCSSckk",
+             "ccsCcccccccck", "kkkkkkkkkkkkk", ".kggggggggggk", "....tetet....", "....ttttT....",
+             "....tttTT....", "...ttttttT...", "...TTTTTTT..." ]
+};
+function _enemyPal(type,variant){
+  const desert=variant.indexOf("d")>=0, t=variant.indexOf("+")>=0?0.8:variant.indexOf("-")>=0?-0.8:0;
+  const T=c=>tintColor(c,t);
+  if(type==="slime") return desert
+    ? {l:T("#f0c060"),m:T("#d0902c"),d:T("#8a4c16"),h:"#fff2c8",e:"#1a0e06",w:"#ffffff"}
+    : {l:T("#8ed05a"),m:T("#55a336"),d:T("#2e6620"),h:"#e6ffcc",e:"#0d1a0a",w:"#ffffff"};
+  if(type==="bat") return desert
+    ? {b:T("#7a5a3a"),B:T("#a07a52"),d:T("#4a3420"),w:T("#5e4430"),W:T("#3a2a1c"),e:"#ff4a2a",f:"#f4ece0"}
+    : {b:T("#4e3c6c"),B:T("#6e5a92"),d:T("#2a2238"),w:T("#3e2f58"),W:T("#251d36"),e:"#ff3a3a",f:"#f4ece0"};
+  if(type==="skeleton") return {o:"#ece6d4",s:"#b6ae9c",k:"#1a1418",r:"#ff5a3a",b:"#8a5a2a",B:"#b07a3a",t:"#d8d0c0"};
+  if(type==="spider") return desert
+    ? {b:"#5a3a22",B:"#7a5634",d:"#2e1c10",R:"#e0a030",h:"#4a3020",e:"#ff3a2a",E:"#ffd0a0",leg:"#4a3020"}
+    : {b:"#3a3046",B:"#62547a",d:"#211a28",R:"#e0404a",h:"#4a3e5a",e:"#ff3030",E:"#ffd0c0",leg:"#3e3450"};
+  if(type==="mushroom") return desert
+    ? {c:"#c8642a",C:"#e88a44",k:"#7a3414",s:"#fff0d8",S:"#e0c8a8",g:"#5a2a18",t:"#eadcc0",T:"#bca888",e:"#1a0e0a"}
+    : {c:"#a8406e",C:"#d0648e",k:"#6a2246",s:"#f6e2ec",S:"#d6b4c6",g:"#4e2238",t:"#e8dec2",T:"#b8aa88",e:"#1a0e14"};
+  return {};
+}
+// 외곽선 계산(getImageData)은 CPU 캔버스에서 → 완성본만 일반 캔버스로 1회 복사 (GPU 동기화 스파이크 방지)
+function _cpuSprite(w,h){ const c=document.createElement("canvas"); c.width=w; c.height=h; const g=c.getContext("2d",{willReadFrequently:true}); g.imageSmoothingEnabled=false; return {c,g,w,h}; }
+function _toGPU(s){ const o=newSprite(s.w,s.h); o.g.drawImage(s.c,0,0); return o; }
+function _mapSprite(rows,pal,ol,pad,draw){
+  const h=rows.length, w=rows[0].length, p=pad||1;
+  const s=_cpuSprite(w+p*2,h+p*2), g=s.g;
+  if(draw) draw(g,p);
+  for(let yy=0;yy<h;yy++){ const row=rows[yy];
+    for(let xx=0;xx<w;xx++){ const c=pal[row[xx]]; if(c){ g.fillStyle=c; g.fillRect(xx+p,yy+p,1,1); } } }
+  outlineSprite(s,ol); return _toGPU(s);
+}
+function _whiteSprite(s){
+  const w=newSprite(s.w,s.h); w.g.drawImage(s.c,0,0);
+  w.g.globalCompositeOperation="source-in"; w.g.fillStyle="#ffffff"; w.g.fillRect(0,0,s.w,s.h); return w;
+}
+function enemySprite(type,frame,variant,white){
+  const key=type+"|"+frame+"|"+variant+"|"+(white?1:0);
+  let s=_enemyCache.get(key); if(s) return s;
+  if(white){ s=_whiteSprite(enemySprite(type,frame,variant,false)); _enemyCache.set(key,s); return s; }
+  const pal=_enemyPal(type,variant);
+  if(type==="spider"){
+    // 다리 8개(무릎 관절) + 몸통 도트맵
+    s=_mapSprite(ENEMY_MAPS.spiderBody,pal,"#0a070c",6,(g,p)=>{
+      for(let i=0;i<4;i++){ const sw=((i+frame)&1)?1:-1, hy=p+2+i, kneeY=hy-2+(i>>1)+sw, footY=hy+1+i+(sw>0?1:0);
+        for(const sd of [-1,1]){ const hx=p+3+sd*2;
+          pLine(g,hx,hy,hx+sd*3,kneeY,pal.leg); pLine(g,hx+sd*3,kneeY,hx+sd*5,footY,pal.leg);
+          g.fillStyle=pal.B; g.fillRect(hx+sd*3,kneeY,1,1); } }
+    });
+  } else if(type==="mushroom"){
+    // 프레임1: 갓이 1px 내려앉음(숨쉬기)
+    const rows=ENEMY_MAPS.mushroom.slice();
+    if(frame===1){ rows.splice(9,1); rows.unshift(".............");  }
+    s=_mapSprite(rows,pal,"#1a0a12");
+  } else {
+    const rows=ENEMY_MAPS[type][frame]||ENEMY_MAPS[type][0];
+    s=_mapSprite(rows,pal, type==="skeleton"?"#1c1416":type==="bat"?"#0e0a14":"#0c160a");
+  }
+  _enemyCache.set(key,s); return s;
+}
+function _eShadow(x,y,w){   // 픽셀 그림자(2줄 타원)
+  ctx.fillStyle="rgba(0,0,0,0.32)"; ctx.fillRect(x-w,y,w*2+1,1); ctx.fillRect(x-w+1,y+1,w*2-1,1); ctx.fillRect(x-w+2,y-1,w*2-3,1);
+}
+function _eDraw(s,x,y,ax,ay,flip){
+  if(flip){ ctx.save(); ctx.translate(x,0); ctx.scale(-1,1); ctx.drawImage(s.c,-ax-1,y-ay); ctx.restore(); }
+  else ctx.drawImage(s.c,x-ax,y-ay);
+}
+// 종류별 현재 프레임/앵커 계산 → {s, ax, ay, flip}
+function _enemyPose(e,variant,white){
+  if(e.type==="bat"){
+    const f=[0,1,2,1][((e.frame||0)>>1)&3];
+    const s=enemySprite("bat",f,variant,white); return {s, ax:8, ay:5, flip:false};
+  }
+  if(e.type==="skeleton"){
+    const moving = e._lx!==undefined && (Math.abs(e.x-e._lx)>0.05 || Math.abs(e.y-e._ly)>0.05);
+    const f = moving ? ((animClock>>3)&1) : 0;
+    const s=enemySprite("skeleton",f,variant,white); return {s, ax:5, ay:11, flip:(e.dir||1)<0};
+  }
+  if(e.type==="spider"){
+    const f=Math.floor((e.legPh||0)*0.6)&1;
+    const s=enemySprite("spider",f,variant,white); return {s, ax:9, ay:10, flip:false};
+  }
+  if(e.type==="mushroom"){
+    const f=Math.sin((e.legPh||0)*2)>0.4?1:0;
+    const s=enemySprite("mushroom",f,variant,white); return {s, ax:7, ay:9, flip:false};
+  }
+  // slime: 점프 위상에 따라 기본/늘어남(공중)/납작(착지)
+  const sn=Math.sin(e.hop||0);
+  const f = sn>0.3 ? 1 : (sn>-0.3 ? 2 : 0);
+  const s=enemySprite("slime",f,variant,white);
+  return {s, ax:(s.w>>1), ay:s.h-6, flip:false, lift:Math.round(Math.max(0,sn)*3)};
+}
+let _dgPrewarmed=false;
+function prewarmDungeonSprites(){   // 첫 던전 프레임에 1회: 적 전 프레임/변이 + 플레이어 캐릭터 프레임 미리 생성
+  _dgPrewarmed=true;
+  const F={slime:3,bat:3,skeleton:2,spider:2,mushroom:2};
+  for(const t in F) for(let f=0;f<F[t];f++) for(const v of ["","+","-","d","d+","d-"]) { enemySprite(t,f,v,false); enemySprite(t,f,v,true); }
+  for(let d=0;d<3;d++) for(let l=0;l<3;l++) charSprite(PLAYER_LOOK,d,l);
+  for(const t of ["0","1","2","3","4","5","6","7","8","9"]) { dmgSprite(t,"w",1); dmgSprite(t,"w",2); }
+}
 function drawEnemies(){
+  if(!_dgPrewarmed) prewarmDungeonSprites();
+  const desert = dungeonTheme==="desert";
   for(const e of enemies){
-    if(!e.alive) continue;
     const x=Math.round(e.x-cam.x), y=Math.round(e.y-cam.y);
-    if(x<-TILE||y<-TILE||x>CW+TILE||y>CH+TILE) continue;
-    if(e.type==="bat"){
-      const w=(e.frame<4)?5:2;
-      ctx.fillStyle=tintColor("#2a2238",e.tint); ctx.fillRect(x-w-2,y-2,w,3); ctx.fillRect(x+2,y-2,w,3);
-      ctx.fillStyle=tintColor("#4a3a66",e.tint); ctx.fillRect(x-2,y-2,4,4);
-      ctx.fillStyle="#ff3030"; ctx.fillRect(x-1,y-1,1,1); ctx.fillRect(x+1,y-1,1,1);
-    }else if(e.type==="skeleton"){
-      const d=e.dir||1;
-      ctx.fillStyle="rgba(0,0,0,0.3)"; ctx.fillRect(x-4,y+5,8,2);   // 그림자
-      // 다리
-      ctx.fillStyle="#cdc7b8"; ctx.fillRect(x-3,y+1,2,5); ctx.fillRect(x+1,y+1,2,5);
-      // 갈비뼈 몸통
-      ctx.fillStyle="#e0dac8"; ctx.fillRect(x-4,y-4,8,6);
-      ctx.fillStyle="#9a948a"; ctx.fillRect(x-4,y-2,8,1); ctx.fillRect(x-4,y,8,1);
-      // 두개골
-      ctx.fillStyle="#cdc7b8"; ctx.fillRect(x-4,y-10,8,6);
-      ctx.fillStyle="#1a1a1a"; ctx.fillRect(x-3,y-8,2,2); ctx.fillRect(x+1,y-8,2,2); // 눈
-      ctx.fillStyle="#9a948a"; ctx.fillRect(x-1,y-5,2,1);                            // 코
-      // 활
-      ctx.strokeStyle="#6b4a2a"; ctx.lineWidth=1;
-      ctx.beginPath(); ctx.arc(x+d*5,y-2,4,-1.2,1.2); ctx.stroke();
-    }else if(e.type==="spider"){
-      if(e.hidden) continue;   // 숨은 동안 안 보임(금 간 벽만 보임)
-      // 검은 몸 + 다리 8개 + 빨간 눈
-      const lp=e.legPh||0;
-      ctx.fillStyle="rgba(0,0,0,0.35)"; ctx.fillRect(x-5,y+4,10,2);  // 그림자
-      ctx.strokeStyle="#0a0a0a"; ctx.lineWidth=1;
-      for(let i=0;i<4;i++){
-        const off=(i-1.5)*2, sw=Math.sin(lp+i)*1.5;
-        // 좌측 다리
-        ctx.beginPath(); ctx.moveTo(x-2,y+off); ctx.lineTo(x-6,y+off-1+sw); ctx.lineTo(x-8,y+off+2); ctx.stroke();
-        // 우측 다리
-        ctx.beginPath(); ctx.moveTo(x+2,y+off); ctx.lineTo(x+6,y+off-1-sw); ctx.lineTo(x+8,y+off+2); ctx.stroke();
+    if(x<-TILE*2||y<-TILE*2||x>CW+TILE*2||y>CH+TILE*2) continue;
+    const variant=(desert?"d":"")+((e.tint||0)>0.33?"+":(e.tint||0)<-0.33?"-":"");
+    if(!e.alive){
+      // v17: 처치 직후 몇 프레임 흰 실루엣으로 번쩍
+      if(e.deathT!==undefined && animClock-e.deathT<6 && !(e.type==="spider"&&e.hidden)){
+        const p=_enemyPose(e,variant,true); _eDraw(p.s,x,y-(p.lift||0),p.ax,p.ay,p.flip);
       }
-      ctx.fillStyle="#141414"; ctx.beginPath(); ctx.ellipse(x,y,4,4,0,0,6.28); ctx.fill();   // 몸통
-      ctx.fillStyle="#222"; ctx.beginPath(); ctx.ellipse(x,y-3,2.5,2,0,0,6.28); ctx.fill();   // 머리
-      ctx.fillStyle="#ff2020"; ctx.fillRect(x-2,y-4,1,1); ctx.fillRect(x+1,y-4,1,1);          // 빨간 눈
-      ctx.fillStyle="#ff6060"; ctx.fillRect(x-2,y-4,1,1);
-    }else if(e.type==="mushroom"){
+      continue;
+    }
+    // v17: 피격 감지(체력 감소) → 6프레임 흰색 번쩍
+    if(e._ph!==undefined && e.hp<e._ph) e.flashT=animClock+6;
+    e._ph=e.hp;
+    const white = (e.flashT||0)>animClock;
+    if(e.type==="spider" && e.hidden){ e._lx=e.x; e._ly=e.y; continue; }   // 숨은 동안 안 보임(금 간 벽만 보임)
+    if(e.type==="mushroom"){
       const fade = e.dyingT>0 ? e.dyingT/180 : 1;
-      // 포자 구름(활성 시)
       if(e.spore){
-        ctx.save(); ctx.globalAlpha=0.28*fade; ctx.fillStyle="#5fae3a";
-        const pr=30; ctx.beginPath(); ctx.arc(x,y,pr,0,6.28); ctx.fill();
-        ctx.globalAlpha=0.18*fade; ctx.fillStyle="#8fd060";
-        ctx.beginPath(); ctx.arc(x,y,pr*0.7,0,6.28); ctx.fill();
-        ctx.restore();
-        // 떠다니는 포자 점들
-        for(let i=0;i<5;i++){ const a=(e.sporeT*0.05+i*1.3); const rr=14+Math.sin(e.sporeT*0.1+i)*8;
-          ctx.fillStyle="rgba(120,224,106,"+(0.5*fade)+")"; ctx.fillRect(x+Math.cos(a)*rr, y+Math.sin(a)*rr, 2,2); }
+        // 포자 구름(픽셀 타원 2겹) + 떠다니는 포자 점
+        ctx.save(); ctx.globalAlpha=0.22*fade; pEll(ctx,x,y,30,26,desert?"#c08a3a":"#5fae3a");
+        ctx.globalAlpha=0.16*fade; pEll(ctx,x,y,21,18,desert?"#e8b860":"#8fd060"); ctx.restore();
+        for(let i=0;i<6;i++){ const a=(e.sporeT*0.05+i*1.05); const rr=12+Math.sin(e.sporeT*0.1+i)*9;
+          ctx.fillStyle=(desert?"rgba(240,190,110,":"rgba(150,236,120,")+(0.6*fade)+")";
+          ctx.fillRect(Math.round(x+Math.cos(a)*rr), Math.round(y+Math.sin(a)*rr), (i&1)+1,(i&1)+1); }
       }
       ctx.save(); ctx.globalAlpha=fade;
-      // 줄기
-      ctx.fillStyle="#d8cdb0"; ctx.fillRect(x-2,y,4,6);
-      ctx.fillStyle="#bcae8e"; ctx.fillRect(x+1,y,1,6);
-      // 갓(독버섯=보라/빨강)
-      ctx.fillStyle="#7a2f5a"; ctx.beginPath(); ctx.ellipse(x,y-1,7,5,0,Math.PI,0); ctx.fill();
-      ctx.fillStyle="#a0416e"; ctx.beginPath(); ctx.ellipse(x,y-2,6,3.5,0,Math.PI,0); ctx.fill();
-      // 반점
-      ctx.fillStyle="#e8d0e0"; ctx.fillRect(x-3,y-3,2,2); ctx.fillRect(x+2,y-2,2,2); ctx.fillRect(x,y-4,1,1);
+      _eShadow(x,y+5,6);
+      const p=_enemyPose(e,variant,white); _eDraw(p.s,x,y,p.ax,p.ay,false);
       ctx.restore();
-    }else{
-      const hop=Math.max(0,Math.sin(e.hop))*2;
-      ctx.fillStyle=tintColor("#3c6e28",e.tint); ctx.fillRect(x-5,y-2-hop,10,8);
-      ctx.fillStyle=tintColor("#5e9c3a",e.tint); ctx.fillRect(x-5,y-2-hop,10,3);
-      ctx.fillStyle="#0a0a0a"; ctx.fillRect(x-3,y-hop,2,2); ctx.fillRect(x+1,y-hop,2,2);
-      ctx.fillStyle="#bfe89a"; ctx.fillRect(x-3,y-1-hop,1,1); ctx.fillRect(x+1,y-1-hop,1,1);
+      continue;
     }
+    const p=_enemyPose(e,variant,white);
+    if(e.type==="bat") _eShadow(x,y+9,3);
+    else if(e.type==="slime") _eShadow(x,y+6,Math.max(3,5-(p.lift||0)));
+    else if(e.type==="skeleton") _eShadow(x,y+6,4);
+    else _eShadow(x,y+5,6);
+    _eDraw(p.s,x,y-(p.lift||0),p.ax,p.ay,p.flip);
+    e._lx=e.x; e._ly=e.y;
   }
 }
 function drawItems(){
@@ -6477,7 +6777,7 @@ function renderDungeon(){
     // v8: 계단 아래로 가라앉는 연출 — 위에서부터 잘려 사라지며 페이드
     const sk=Math.min(1,player.sink);
     ctx.save();
-    ctx.beginPath(); ctx.rect(sx-10, sy-12, 20, 14*(1-sk)+2); ctx.clip();
+    ctx.beginPath(); ctx.rect(sx-14, sy-18, 28, 24*(1-sk)+2); ctx.clip();   // v17: 캐릭터 스프라이트 높이
     ctx.globalAlpha=Math.max(0, 1-sk*0.7);
     drawPlayer(sx, sy+sk*6);   // 살짝 아래로 내려가며
     ctx.restore();
@@ -9939,6 +10239,7 @@ function stepWorld(){
         updateParticles();                             // 엔딩/QTE 동안 월드 입력 정지(입자만)
         if(deepStar){ for(const p of deepStar.particles) p.a+=p.sp; }
       } else if(!showInv && !csBlocksInput() && !bossCSBlocks() && !gateCloseup){   // 컷신/클로즈업 중엔 월드 정지
+        if(hitStopT>0){ hitStopT--; return; }          // v17: 처치 타격 경직(월드 스텝만 건너뜀)
         updatePlayer(); updateEnemies(); updateBoss(); updateEnemyShots();
         updateProjectiles(); updateBombs(); updateTraps(); updateItems();
         updateParticles(); updateDmgPops(); updateCam();
