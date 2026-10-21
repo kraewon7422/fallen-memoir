@@ -54,13 +54,13 @@
       radial-gradient(ellipse at center, #15131a 0%, #050507 70%);
   }
   #stage{
-    position:relative;
+    position:relative; touch-action:none;
     box-shadow:0 0 0 3px #1a1820, 0 0 40px #000 inset, 0 14px 50px rgba(0,0,0,.8);
     image-rendering:pixelated;
   }
   canvas{display:block; image-rendering:pixelated; background:#000;}
   #game{position:relative; z-index:1;}
-  #ui{position:absolute; top:0; left:0; z-index:4; background:transparent; pointer-events:auto;}
+  #ui{position:absolute; top:0; left:0; z-index:4; background:transparent; pointer-events:auto; touch-action:none;}
   /* subtle CRT scanlines */
   #scan{
     position:absolute; inset:0; pointer-events:none; z-index:5;
@@ -345,6 +345,7 @@
       <h1 style="color:#e8344e; text-shadow:0 0 14px #8a1020, 3px 3px 0 #2a0808;">YOU DIED</h1>
       <div class="hint">
         지하 <b style="color:var(--torch)" id="overDepth">1</b>층에서 쓰러졌다.<br>
+        <span id="overCause" style="display:block"></span>
         최종 점수 <b style="color:var(--torch)" id="overScore">0</b><br>
         어둠은 다시 너를 기다린다…
       </div>
@@ -416,6 +417,7 @@
       <button class="tbtn small" id="btnAdmin"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.3"/></svg></button>
       <button class="tbtn small" id="btnHome"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg></button>
       <button class="tbtn small" id="btnMap"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg></button>
+      <button class="tbtn small" id="btnMute">🔊</button>
       <div id="adminCmds" style="display:none; position:absolute; right:12px; top:120px; flex-direction:column; gap:6px; pointer-events:auto;">
         <button class="acmd" id="acNext">▼ 다음 층</button>
         <button class="acmd" id="acBoss">☠ 보스 처치</button>
@@ -436,6 +438,12 @@
    - 횃불 시야(어둠 마스크 + 깜빡임) + 탐험 기억(fog)
    - 카메라 추적, 출구 계단 → 다음 층
    ========================================================================= */
+
+// ---- 안전한 localStorage: 사이트 데이터 차단/용량 초과 시 예외 대신 메모리 폴백 ----
+const _lsMem={};
+function lsGet(k){ if(Object.prototype.hasOwnProperty.call(_lsMem,k)) return _lsMem[k]; try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ v=String(v); try{ localStorage.setItem(k,v); delete _lsMem[k]; }catch(e){ _lsMem[k]=v; } }
+function lsRemove(k){ delete _lsMem[k]; try{ localStorage.removeItem(k); }catch(e){} }
 
 // ---- 상수 -------------------------------------------------------------
 const TILE = 16;            // 원본 타일 픽셀
@@ -481,7 +489,7 @@ let _clockLastMs = (typeof performance!=="undefined"?performance.now():Date.now(
 let _clockSaveAcc = 0;
 let bedSleeping = false;                    // 침대에서 자는 중이면 시간 가속
 (function loadClock(){
-  try{ const v=parseFloat(localStorage.getItem("de_clock")); if(!isNaN(v)) timeOfDay=((v%24)+24)%24; }catch(e){}
+  try{ const v=parseFloat(lsGet("de_clock")); if(!isNaN(v)) timeOfDay=((v%24)+24)%24; }catch(e){}
 })();
 function advanceClock(){
   const now=(typeof performance!=="undefined"?performance.now():Date.now());
@@ -493,7 +501,7 @@ function advanceClock(){
   timeOfDay += (dt*mult / DAY_MS) * 24;
   if(timeOfDay>=24) timeOfDay-=24;
   _clockSaveAcc += dt;
-  if(_clockSaveAcc>4000){ _clockSaveAcc=0; try{ localStorage.setItem("de_clock", timeOfDay.toFixed(3)); }catch(e){} }
+  if(_clockSaveAcc>4000){ _clockSaveAcc=0; lsSet("de_clock", timeOfDay.toFixed(3)); }
 }
 function isNight(){ return timeOfDay<5.5 || timeOfDay>=19; }
 // 주민 활동도(낮 1 → 밤 0), 새벽/황혼에 1시간에 걸쳐 부드럽게
@@ -789,9 +797,17 @@ const POTION_KEYS = ["heal","invis","haste","power","shield"];
 
 // ===== 8비트 효과음 (WebAudio, 외부 파일 없음) =========================
 let actx=null;
-function initAudio(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } }
+function initAudio(){ if(!actx){ try{ actx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){} } resumeAudio(); }
+// 모바일/탭 전환 후 suspended·interrupted 된 오디오 컨텍스트 깨우기
+function resumeAudio(){ if(actx && (actx.state==="suspended"||actx.state==="interrupted")){ try{ const p=actx.resume(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} } }
+let sfxMuted = lsGet("fm_mute")==="1";   // 음소거(Shift+M / 모바일 🔊 버튼) — 효과음 볼륨 0
+function toggleMute(){
+  sfxMuted=!sfxMuted; lsSet("fm_mute", sfxMuted?"1":"0");
+  const b=document.getElementById("btnMute"); if(b) b.textContent=sfxMuted?"🔇":"🔊";
+  if(typeof showPickup==="function" && started) showPickup((sfxMuted?"효과음 끔":"효과음 켬")+(isMobile?"":" (Shift+M)"));
+}
 function tone(freq, dur, type="square", vol=0.12, slideTo=null){
-  if(!actx) return;
+  if(!actx || sfxMuted) return;       // 음소거: 효과음 볼륨 0 (소리 생성 자체를 생략)
   const t=actx.currentTime;
   const o=actx.createOscillator(), g=actx.createGain();
   o.type=type; o.frequency.setValueAtTime(freq,t);
@@ -3614,6 +3630,7 @@ function spawnPlayer(start){
            hp, inv:0, fx:1, fy:0, ax:1, ay:0,
            inv_items:inv, weapon:wpn, swing:0,
            hotbar, storage, chest,
+           _slotsInit: !!hotbar,               // 이미 슬롯 형태면 재이주 금지(빈 칸 있을 때 층마다 아이템 복제/덮어쓰기 버그)
            souls: souls || {},
            blessings: bless || {},
            keys: keysHeld,
@@ -3661,6 +3678,7 @@ function invCount(){    // 무기+아이템 보유 수(포션·코인 제외)
 function invFull(){ return invCount()>=INV_CAP; }
 function addToInventory(wkey){     // 빈 칸에 배치(핫바 우선→보관). 가득이면 false
   if(player.hotbar.includes(wkey)||player.storage.includes(wkey)) return true; // 이미 보유
+  if(player.chest && player.chest.includes(wkey)) return true;                 // 집 상자에 보관 중 = 보유(중복 방지)
   for(let i=0;i<HOTBAR_N;i++) if(!player.hotbar[i]){ player.hotbar[i]=wkey; syncInvItems(); return true; }
   for(let i=0;i<STORAGE_N;i++) if(!player.storage[i]){ player.storage[i]=wkey; syncInvItems(); return true; }
   return false;   // 가득 참
@@ -3726,15 +3744,45 @@ function saveProgress(){
       bossSoulsClaimed,                     // v17: 300코인 받은 보스 영혼(선택 필드)
       keys:player.keys||0,
       savePoints:player.savePoints||0,      // v3.8: 세이브 포인트 영구 저장
-      hp:player.hp, floorNum, dungeonTheme };   // v3.1: 현재 던전 테마도 저장(CONTINUE용)
-    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+      hp:player.hp, floorNum, dungeonTheme,     // v3.1: 현재 던전 테마도 저장(CONTINUE용)
+      v:1 };                                    // 저장 형식 버전
+    // 진짜 사망(세이브 포인트 없음) 상태의 저장 = '다시 도전'과 같은 규칙: 코인·무기 유지, 1층부터·체력 가득
+    //   (사망 후 메뉴로 나가 CONTINUE 하면 죽은 층에서 부활하던 버그 방지)
+    if(gameOver && !gameWon){ data.floorNum=1; data.hp=MAX_HP; }
+    lsSet(SAVE_KEY, JSON.stringify(data));
   }catch(e){}
+}
+// 저장 데이터 정리: 손상/구버전 값이 게임을 깨지 않도록(알 수 없는 아이템=빈 칸, 숫자 범위 제한, 테마 검증)
+function sanitizeSave(d){
+  const num=(v,lo,hi)=> (typeof v==="number" && isFinite(v)) ? Math.max(lo,Math.min(hi,v)) : undefined;
+  const int=(v,lo,hi)=>{ const n=num(v,lo,hi); return n===undefined?undefined:Math.floor(n); };
+  const slots=(a,n)=> Array.isArray(a) ? a.slice(0,n).map(k=>(typeof k==="string" && WEAPONS[k]) ? k : null) : undefined;
+  d.hotbar=slots(d.hotbar,HOTBAR_N); d.storage=slots(d.storage,STORAGE_N); d.chest=slots(d.chest,CHEST_N);
+  if(typeof d.weapon!=="string" || !WEAPONS[d.weapon]) d.weapon=null;
+  if(d.wlv && typeof d.wlv==="object" && !Array.isArray(d.wlv)){
+    const w={}; for(const k in d.wlv){ const lv=int(d.wlv[k],0,WEAPON_MAX_LV); if(WEAPONS[k] && lv) w[k]=lv; } d.wlv=w;
+  } else d.wlv=null;
+  d.coins=int(d.coins,0,1e9); d.score=int(d.score,0,1e12);
+  d.armorTier=int(d.armorTier,0,ARMORS.length); d.healthBought=int(d.healthBought,0,999);
+  d.chargePerKill=int(d.chargePerKill,1,100); d.chargeBought=int(d.chargeBought,0,999);
+  d.keys=int(d.keys,0,999); d.savePoints=int(d.savePoints,0,999);
+  d.hp=num(d.hp,0,10000); d.floorNum=int(d.floorNum,1,999);
+  if(d.dungeonTheme!=="stone" && d.dungeonTheme!=="desert") d.dungeonTheme="stone";
+  if(d.souls && typeof d.souls==="object" && !Array.isArray(d.souls)){
+    const s={}; for(const k of SOUL_KEYS){ const n=int(d.souls[k],0,9999); if(n) s[k]=n; } d.souls=s;
+  } else d.souls=null;
+  if(d.blessings && typeof d.blessings==="object" && !Array.isArray(d.blessings)){
+    const b={}; for(const k of BLESS_ORDER){ if(k in d.blessings) b[k]=(d.blessings[k]===1||d.blessings[k]===true)?1:0; } d.blessings=b;
+  } else d.blessings=null;
+  d.templeSouls=Array.isArray(d.templeSouls) ? d.templeSouls.filter(k=>BOSS_SOUL_KEYS.indexOf(k)>=0) : [];
+  if(d.bossSoulsClaimed!==undefined) d.bossSoulsClaimed=Array.isArray(d.bossSoulsClaimed) ? d.bossSoulsClaimed.filter(k=>BOSS_SOUL_KEYS.indexOf(k)>=0) : [];
+  return d;
 }
 function loadProgress(){
   try{
-    const raw=localStorage.getItem(SAVE_KEY); if(!raw) return false;
-    const d=JSON.parse(raw); if(!d) return false;
-    _pendingSave=d; return true;     // spawnPlayer 이후 적용
+    const raw=lsGet(SAVE_KEY); if(!raw) return false;
+    const d=JSON.parse(raw); if(!d || typeof d!=="object" || Array.isArray(d)) return false;
+    _pendingSave=sanitizeSave(d); return true;     // spawnPlayer 이후 적용
   }catch(e){ return false; }
 }
 let _pendingSave=null;
@@ -3768,7 +3816,7 @@ function applyPendingSave(){
   syncInvItems();
 }
 function clearProgress(){
-  try{ localStorage.removeItem(SAVE_KEY); localStorage.removeItem("de_clock"); }catch(e){}
+  lsRemove(SAVE_KEY); lsRemove("de_clock");
   _pendingSave=null;          // 대기 중 저장도 폐기
   player=null;                // 메모리상 플레이어 폐기(다음 시작 시 새로 생성)
   coins=0; score=0;           // 메모리상 진행도 초기화
@@ -3803,6 +3851,7 @@ function upgradeWeapon(key){
   coins-=cost; player.wlv[key]=lv+1;
   showPickup(WEAPONS[key].name+" 강화! +"+(lv+1)+" (피해↑)");
   sfx("pickup"); burst(player.x,player.y,"#ffd24a",12);
+  saveProgress();
 }
 // v17: 강화 보너스 = 강화 단계 × (쿨다운/18) — 강화 1단계당 DPS 증가량이 모든 무기에서 같다
 //   (쿨다운 18 무기는 기존과 동일하게 +1/단계, 쌍단검(6)은 +0.33, 폭탄(50)은 +2.78)
@@ -3991,7 +4040,7 @@ function startAttack(){
   darkShockGreenHit(hitX, hitY, reach);   // v3.18: 근거리 공격이 초록 약점 타일을 스치면 타격
   darkShockGreenHit();                    // v3.18: 플레이어가 타일 위에 선 경우도 인정(하위호환)
   darkRemnantHit(hitX,hitY,reach);   // v3.5: 어둠의 잔재 — 촉수를 때리면 본체 피해
-  if(W.kind==="magic" && W.elem==="fire") tryLightBrazier();
+  if(W.kind==="magic" && W.projectile==="fire") tryLightBrazier();   // (W.elem은 존재하지 않는 필드였음)
 
   // v8: 폭탄 — 주변에 던져 일정 시간 후 폭발(광역)
   if(W.kind==="bomb"){
@@ -4102,8 +4151,20 @@ function startAttack(){
   }
 }
 
+// 사망 화면용: 마지막으로 피해를 준 대상(근처 보스/적 기준 추정)
+let lastHurtSrc="";
+const ENEMY_KO={bat:"박쥐", slime:"슬라임", spider:"거미", skeleton:"해골", mushroom:"버섯"};
+function guessHurtSource(ranged){
+  if(boss && boss.alive) return boss.name||"보스";
+  let best=null, bd=48;
+  for(const e of enemies){ if(!e.alive) continue; const d=Math.hypot(e.x-player.x, e.y-player.y); if(d<bd){ bd=d; best=e; } }
+  if(best) return ENEMY_KO[best.type]||"몬스터";
+  return ranged ? "날아든 공격" : "함정";
+}
 function hurt(dmg, ranged){
   if(player.inv>0 || gameOver) return;
+  if(descending || cooling) return;          // 계단 하강/층 이동 중엔 무적
+  lastHurtSrc=guessHurtSource(ranged);
   if(dmg>=3 && scene==="dungeon") dmg=Math.round(dmg*enemyDmgMul());   // v17: 깊이에 따른 적 피해 증가(1~2 지속피해는 제외)
   if(!ranged && blessActive("seamstress")) dmg=Math.max(1, dmg-2);  // v8: 제봉사의 옷감 — 근거리 피해 -2
   if(player.eShield>0) dmg=Math.max(1, Math.ceil(dmg*0.5));  // 수호: 피해 절반
@@ -4116,7 +4177,8 @@ function hurt(dmg, ranged){
 }
 // v3.0: 무적 프레임을 무시하는 순수 피해(어둠의 뱀 등 '지속 접촉' 전용). 방어/실드는 반영하되 최소 1.
 function damagePlayerRaw(dmg){
-  if(gameOver) return;
+  if(gameOver || descending || cooling) return;   // 하강/층 이동 중 무적
+  lastHurtSrc=(boss && boss.alive && boss.name) ? boss.name : "어둠";
   if(player.eShield>0) dmg=Math.max(1, Math.ceil(dmg*0.5));
   if(player.armorTier>0) dmg=Math.max(1, Math.ceil(dmg*(1-ARMORS[player.armorTier-1].red)));
   player.hp-=dmg;
@@ -4146,7 +4208,7 @@ function tickPoison(){
     if(player.poisonAcc>=60){    // 1초마다
       player.poisonAcc=0;
       player.hp-=2; popDmg(player.x,player.y-12,2,"hurt"); burst(player.x,player.y,"#7ee06a",5);
-      if(player.hp<=0){ player.hp=0; doGameOver(); }
+      if(player.hp<=0){ player.hp=0; lastHurtSrc="독"; doGameOver(); }
     }
     // 독 안개 파티클
     if(Math.random()<0.2) burst(player.x+(Math.random()*8-4),player.y+(Math.random()*8-4),"#5fae3a",1);
@@ -4843,6 +4905,9 @@ function occupiedByPuzzleExcept(tx,ty,exceptBlock){
 }
 function gainWeapon(wkey){
   const already = player.hotbar.includes(wkey)||player.storage.includes(wkey);
+  if(!already && player.chest && player.chest.includes(wkey)){   // 집 상자에 이미 있음 → 중복 획득 안 함
+    showPickup(WEAPONS[wkey].name+" — 이미 집 상자에 보관 중"); sfx("pickup"); return true;
+  }
   if(!addToInventory(wkey)){
     showPickup("인벤토리가 가득 찼다"); sfx("hurt"); return false;
   }
@@ -7164,7 +7229,7 @@ function scheduleTownPrewarm(){
     if(scene==="town" || transition) return;          // 진입 중이면 원래 경로(goToTown)에 맡김
     if(townReady){ refreshTownArt(); return; }        // 저장 적용 후 상태가 달라졌으면 그 부분만 갱신
     if(started){ initTown(); return; }
-    let sd=null; try{ sd=JSON.parse(localStorage.getItem(SAVE_KEY)||"null"); }catch(e){}
+    let sd=null; try{ sd=JSON.parse(lsGet(SAVE_KEY)||"null"); }catch(e){}
     const du=desertUnlocked, ts=templeSouls;
     if(sd){ desertUnlocked=!!sd.desertUnlocked; templeSouls=Array.isArray(sd.templeSouls)?sd.templeSouls.slice(0,6):[]; }
     try{ initTown(); } finally { desertUnlocked=du; templeSouls=ts; }
@@ -8542,7 +8607,7 @@ function shopOptions(kind){
     const list=[["dagger",40],["sword",120],["spear",150],["whip",180],["mace",200],["greatsword",300],
                 ["bow",220],["ice",240],["fire",260],["venom",280],["bolt",320]];
     for(const [wk,price] of list){
-      const W=WEAPONS[wk], owned=player.inv_items.includes(wk);
+      const W=WEAPONS[wk], owned=player.inv_items.includes(wk)||(player.chest||[]).includes(wk);   // 집 상자 보관분도 보유
       out.push({label:W.name, sub:W.desc+" · 피해 "+W.dmg, price:owned?null:price, disabled:owned, ownedTag:owned,
         action:()=>{
           if(player.hotbar.includes(wk)||player.storage.includes(wk)){ player.weapon=wk; return; }
@@ -8585,6 +8650,7 @@ function buyShop(){
   o.action && o.action();
   sfx("pickup"); burst(player.x,player.y,"#ffd24a",10);
   openShop(shop.kind);   // 가격/상태 갱신(선택 유지)
+  saveProgress();        // 구매 즉시 저장(새로고침/종료 시 코인만 빠지는 문제 방지)
 }
 function drawShop(){
   uctx.save(); uctx.scale(UIS,UIS);
@@ -8980,8 +9046,18 @@ function drawHousePrompts(){
 }
 
 /* ============================ 씬 전환 진입점 ============================ */
+// 플레이어가 직접 마을로 귀환(Ctrl+Shift+H / 홈 버튼)할 수 있는 상태인지 — 사망·컷신·층선택·하강 중엔 불가
+function canReturnHome(){
+  return started && scene==="dungeon" && !transition && !gameOver && !paused &&
+    !bossCS && !colosseumCS && !deepQTE && !deepEnding && !deep31Prompt && !floorSelect && !descending && !cooling;
+}
 function goToTown(){
+  if(gameOver) return;                                         // 사망 상태로 마을 이동 금지
   startTransition(()=>{
+    // 혹시 남은 던전 일시 상태 정리(컷신/층선택/하강 등) — 마을에서 입력 잠김 방지
+    bossCS=null; colosseumCS=null; deepQTE=null; deepPanel=null; deepEnding=null; deep31Prompt=null; deepStar=null;
+    floorSelect=null; playerSink=null; descending=null; cooling=false; gateCloseup=null; showMap=false; paused=false; atkHold=false;
+    if(player) player.sink=0;
     scene="town"; if(!townReady) initTown();
     playerGrab=null;                                            // v13: 마을 이동 시 포박 해제
     particles=[]; showInv=false; shop=null; nearChest=null; player.inBed=false;
@@ -9384,12 +9460,36 @@ function carveOpen(tx,ty){
   }
 }
 let cooling=false;
+let paused=false;          // ESC 일시정지(던전) — 월드 정지
+let _runId=0;              // 런/메뉴 전환마다 증가 → 이전 런의 지연 타이머 무효화
+// 컷신·패널·입력 등 일시 상태 일괄 초기화 (메뉴 나가기/새 시작/다시 도전/부활 공용)
+function resetTransientState(){
+  _runId++;
+  if(held && player && typeof returnHeld==="function") returnHeld();   // 들고 있던 아이템은 제자리로
+  bossCS=null; colosseumCS=null; gateCloseup=null; quakeCS=null; npcDialog=null;
+  deepQTE=null; deepPanel=null; deepEnding=null; deep31Prompt=null; deepStar=null;
+  floorSelect=null; playerGrab=null; playerSink=null; descending=null; cooling=false; transition=null;
+  showInv=false; chestOpen=false; shop=null; showMap=false; paused=false;
+  if(player) player.sink=0;
+  clearHeldInputs();
+}
+// 눌린 키/마우스/조이스틱/연사 해제 (창 포커스 잃음·탭 숨김·상태 초기화 시)
+function clearHeldInputs(){
+  for(const k in keys) keys[k]=false;
+  if(typeof mouseBtns!=="undefined"){ mouseBtns.left=false; mouseBtns.right=false; }
+  joy.active=false; joy.dx=0; joy.dy=0;
+  if(typeof joyId!=="undefined") joyId=null;
+  const kn=document.getElementById("joyKnob"); if(kn) kn.style.transform="translate(0,0)";
+  if(typeof atkHold!=="undefined") atkHold=false;
+}
 function nextFloor(){
   if(cooling) return; cooling=true;
   const keepHp=player.hp;                          // 체력 이월
   score+=100;                                      // 층 클리어 보너스
   document.getElementById("status").textContent="더 깊은 곳으로 내려간다…";
+  const rid=_runId;
   setTimeout(()=>{
+    if(gameOver || !started || rid!==_runId) return;   // 그 사이 사망/메뉴 이탈 → 층 이동 취소
     floorNum++; buildFloor();
     if(floorNum>deepestFloor) deepestFloor=floorNum;   // v5: 최고 깊이
     player.hp=keepHp;                              // 새 층에 체력 유지
@@ -9429,22 +9529,23 @@ function doGameOver(){
   }
   gameOver=true; sfx("dead");
   playerGrab=null;                                             // v13: 사망 시 포박 해제
+  atkHold=false; paused=false;
   saveProgress();                                              // 사망해도 코인·무기 유지
   if(typeof LB==="object" && LB.submitRun()) showRecToast();   // v5: 기록 제출 + 신기록 토스트
   const p=document.getElementById("over");
   document.getElementById("overDepth").textContent=floorNum;
   document.getElementById("overScore") && (document.getElementById("overScore").textContent=score);
+  const oc=document.getElementById("overCause"); if(oc) oc.textContent = lastHurtSrc ? ("원인: "+lastHurtSrc) : "";
   p.classList.remove("hidden");
 }
 // v3.8: 세이브 포인트 부활 — 같은 층을 입구부터 다시 시작(보스층이면 보스 재소환). 코인·무기·점수 유지.
 function reviveAtFloorStart(){
   // 즉시 위협 제거 + 무적 부여(페이드 동안 재사망 방지)
   player.hp=MAX_HP; player.inv=999;
-  enemies=[]; enemyShots=[]; projectiles=[]; bombs=[]; boss=null; playerGrab=null;
-  // 컷신/특수 상태 정리(30층 깊은 어둠·콜로세움 등)
-  deepQTE=null; deepPanel=null; deepEnding=null; deep31Prompt=null; deepStar=null;
-  colosseumCS=null; gateCloseup=null; quakeCS=null; descending=null; cooling=false; transition=null;
-  showInv=false; shop=null; showMap=false; nearChest=null; bossCleared=false;
+  enemies=[]; enemyShots=[]; projectiles=[]; bombs=[]; boss=null;
+  // 컷신/특수 상태 정리(30층 깊은 어둠·콜로세움 등) — 공용 초기화 사용
+  resetTransientState();
+  nearChest=null; bossCleared=false;
   sfx("potion");
   startTransition(()=>{
     buildFloor();                       // 같은 floorNum → 그 층 입구부터(보스층이면 보스 재소환+컷신)
@@ -9461,6 +9562,7 @@ function doWin(){
   document.getElementById("win").classList.remove("hidden");
 }
 function restart(){
+  resetTransientState();
   document.getElementById("over").classList.add("hidden");
   document.getElementById("win").classList.add("hidden");
   gameOver=false; gameWon=false; floorNum=1; showMap=false; showInv=false;
@@ -9475,10 +9577,10 @@ function restart(){
 function refreshContinueBtn(){
   try{
     const cb=document.getElementById("continueBtn"); if(!cb) return;
-    const raw=localStorage.getItem(SAVE_KEY);
+    const raw=lsGet(SAVE_KEY);
     let show=false, label="▶ CONTINUE";
     if(raw){ const d=JSON.parse(raw);
-      if(d){ show=true;
+      if(d && typeof d==="object" && !Array.isArray(d)){ show=true;
         const fl=(typeof d.floorNum==="number")?d.floorNum:1;
         const where=(d.dungeonTheme==="desert")?"사막 던전":"던전";
         label="▶ CONTINUE  ("+where+" "+fl+"층)";
@@ -9490,6 +9592,7 @@ function refreshContinueBtn(){
   }catch(e){}
 }
 function exitToMenu(){
+  resetTransientState(); reviving=false; _goLock=false;   // 일시 상태 정리(들고 있던 아이템 복귀 후 저장)
   if(started) saveProgress();                          // 나가도 코인·무기 유지
   if(started && typeof LB==="object") LB.submitRun();  // v5: 나가기 전 기록 반영
   started=false; gameOver=false; gameWon=false; showMap=false; showInv=false;
@@ -9595,15 +9698,15 @@ document.getElementById("prologue").addEventListener("touchend",e=>{
 // ====================== 리더보드 ======================
 const LB = (function(){
   const LS_UID="de_uid", LS_NICK="de_nick", LS_BEST="de_best";
-  let uid = localStorage.getItem(LS_UID);
-  if(!uid){ uid = "u_"+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); localStorage.setItem(LS_UID,uid); }
-  let nick = localStorage.getItem(LS_NICK) || "";
+  let uid = lsGet(LS_UID);
+  if(!uid){ uid = "u_"+Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4); lsSet(LS_UID,uid); }
+  let nick = lsGet(LS_NICK) || "";
   let best = {coins:0,floor:1,kills:0};
-  try{ best = Object.assign(best, JSON.parse(localStorage.getItem(LS_BEST)||"{}")); }catch(e){}
+  try{ best = Object.assign(best, JSON.parse(lsGet(LS_BEST)||"{}")); }catch(e){}
   let db=null, online=false, cat="coins", rows=[];
   const CATS={coins:{label:"코인",icon:"💰"}, floor:{label:"층",icon:"⬇"}, kills:{label:"처치",icon:"⚔"}};
 
-  function saveBest(){ localStorage.setItem(LS_BEST, JSON.stringify(best)); }
+  function saveBest(){ lsSet(LS_BEST, JSON.stringify(best)); }
 
   function init(){
     // 닉네임 입력칸 채우기
@@ -9637,7 +9740,7 @@ const LB = (function(){
 
   function currentNick(){ return (nick&&nick.trim()) ? nick.trim() : "이름없는 모험가"; }
   function setNick(n){
-    nick=(n||"").trim().slice(0,12); localStorage.setItem(LS_NICK,nick);
+    nick=(n||"").trim().slice(0,12); lsSet(LS_NICK,nick);
     // 닉네임이 바뀌어도 같은 uid로 기록이 따라감 → 원격 닉만 갱신
     if(online && db){ db.ref("scores/"+uid+"/nick").set(currentNick()).catch(()=>{}); }
     else { renderLocal(); }          // 로컬 모드: 표시용 행도 즉시 새 닉으로 갱신
@@ -9666,7 +9769,7 @@ const LB = (function(){
   // v11: 기록 초기화 — 개인 최고 기록(로컬+온라인) 완전 삭제
   function reset(){
     best={coins:0, floor:1, kills:0};
-    try{ localStorage.removeItem(LS_BEST); }catch(e){}
+    lsRemove(LS_BEST);
     if(online && db){ try{ db.ref("scores/"+uid).remove(); }catch(e){} }
     rows=[]; renderLocal(); render();
   }
@@ -9698,6 +9801,7 @@ const elTouch=document.getElementById("touch");
 const elJoy=document.getElementById("joy"), elKnob=document.getElementById("joyKnob");
 const elBtnA=document.getElementById("btnA"), elBtnInv=document.getElementById("btnInv"), elBtnMenu=document.getElementById("btnMenu");
 const elBtnHome=document.getElementById("btnHome");
+const elBtnMute=document.getElementById("btnMute");    // 음소거 토글(모바일)
 const elBtnMap=document.getElementById("btnMap");      // v3.11: 모바일 지도 버튼
 const elBtnAdmin=document.getElementById("btnAdmin");   // v3.9: 모바일 관리자 버튼
 const elAdminCmds=document.getElementById("adminCmds"); // v3.10: 관리자 커맨드 버튼들
@@ -9741,6 +9845,8 @@ function positionTouch(portrait){
   // v8: 홈(마을 복귀) 버튼 — 메뉴 버튼 바로 오른쪽
   elBtnHome.style.left="76px"; elBtnHome.style.top="56px";
   elBtnHome.style.right="auto"; elBtnHome.style.bottom="auto";
+  // 음소거 버튼 — 홈 버튼 바로 오른쪽
+  if(elBtnMute){ elBtnMute.style.left="140px"; elBtnMute.style.top="56px"; elBtnMute.style.right="auto"; elBtnMute.style.bottom="auto"; }
   // v3.20: 지도 버튼 — 우측 상단
   if(elBtnMap){ elBtnMap.style.right="12px"; elBtnMap.style.top="56px"; elBtnMap.style.left="auto"; elBtnMap.style.bottom="auto"; }
   // v3.20: 관리자 버튼 — 지도 버튼 바로 왼쪽(우측 상단)
@@ -9750,6 +9856,7 @@ function positionTouch(portrait){
 function setDisp(el,v){ if(el && el.style.display!==v) el.style.display=v; }
 function refreshTouchVisibility(){
   if(!isMobile) return;
+  if(elBtnMute) setDisp(elBtnMute, (started && !(showInv || (typeof shop!=="undefined" && shop))) ? "flex" : "none");
   if(!started){ setDisp(elBtnA,"none"); setDisp(elBtnInv,"none"); setDisp(elBtnMenu,"none"); setDisp(elJoy,"none"); setDisp(elBtnCharge,"none"); setDisp(elBtnHome,"none"); setDisp(elBtnAdmin,"none"); setDisp(elBtnMap,"none"); return; }
   const inDungeon = scene==="dungeon";
   // v3.20: 인벤토리/상점/지도 등 전체화면 오버레이가 떠 있으면 상단 버튼을 숨겨 슬롯 가림·오터치 방지
@@ -9815,10 +9922,12 @@ function bindHold(el, downFn){
   el.addEventListener("click",e=>{ e.preventDefault(); e.stopPropagation(); if(el._touched){ el._touched=false; return; } downFn(); });
 }
 let atkHold=false;
-bindHold(elBtnA, ()=>{ if(scene==="dungeon"){ if(playerGrab) struggleGrab(); else if(playerSink) struggleSink(); else startAttack(); } });
+bindHold(elBtnA, ()=>{ if(paused){ paused=false; return; } if(scene==="dungeon"){ if(playerGrab) struggleGrab(); else if(playerSink) struggleSink(); else startAttack(); } });
 // 공격 버튼 꾹 누르면 연사 (쿨다운은 startAttack 내부)
 elBtnA.addEventListener("touchstart",()=>{atkHold=true;});
 elBtnA.addEventListener("touchend",()=>{atkHold=false;});
+elBtnA.addEventListener("touchcancel",()=>{atkHold=false;});   // 시스템 제스처 등으로 터치 취소 시 연사 고착 방지
+if(elBtnMute){ elBtnMute.textContent=sfxMuted?"🔇":"🔊"; bindHold(elBtnMute, ()=>{ toggleMute(); }); }
 bindHold(elBtnInv, ()=>{ openInventory(); });
 bindHold(elBtnCharge, ()=>{ chargeAttack(); });
 let _menuConfirmT=0;
@@ -9843,7 +9952,7 @@ bindHold(elBtnMenu, ()=>{
 });
 // v8: 홈 버튼 — 던전에서 마을로 복귀
 bindHold(elBtnHome, ()=>{
-  if(started && scene==="dungeon" && !transition && !showInv && !shop){ goToTown(); }
+  if(canReturnHome() && !showInv && !shop){ goToTown(); }
 });
 // v3.9: 관리자 버튼(모바일) — 코드 입력창 열기/해제
 if(elBtnAdmin) bindHold(elBtnAdmin, ()=>{ openAdminPanel(); });
@@ -9869,6 +9978,7 @@ if(elAdminCmds){
 // 더블탭 = E(상호작용). 캔버스 표시영역에서만, 버튼 위는 stopPropagation으로 제외됨
 function tapInteract(e){
   if(!started) return;
+  if(paused){ paused=false; lastTapT=0; return; }   // 일시정지 중 탭 = 계속
   const now=Date.now();
   const t=e.changedTouches?e.changedTouches[0]:e;
   const x=t.clientX, y=t.clientY;
@@ -10042,7 +10152,16 @@ function stepWorld(){
     }
   }
 }
+// 루프 예외 로그 — 같은 메시지는 한 번만(매 프레임 스팸 방지)
+const _loopErrSeen=new Set();
+function _loopErr(err){
+  const m=(err && (err.stack||err.message)) || String(err);
+  if(_loopErrSeen.has(m)) return; _loopErrSeen.add(m);
+  console.error("[Fallen Memoir] loop error (game continues):", err);
+}
 function loop(){
+  requestAnimationFrame(loop);        // 먼저 예약 → 한 번의 예외로 게임이 멈추지 않음
+  try{
   if(started){
     advanceClock();                   // 시간 진행 (전 씬 공용)
     if(isMobile) refreshTouchVisibility();
@@ -10051,11 +10170,27 @@ function loop(){
     let frame=now-_loopLast; _loopLast=now;
     if(frame>200) frame=200;          // 탭 복귀 등 큰 점프 방지
     _loopAcc+=frame;
+    if(paused && scene!=="dungeon") paused=false;   // 일시정지는 던전 전용
     let steps=0;
-    while(_loopAcc>=STEP && steps<5){ stepWorld(); _loopAcc-=STEP; steps++; }
-    render();
+    while(_loopAcc>=STEP && steps<5){ if(!paused){ try{ stepWorld(); }catch(err){ _loopErr(err); } } _loopAcc-=STEP; steps++; }
+    if(_loopAcc>STEP*5) _loopAcc=0;   // 밀린 스텝 누적 방지
+    try{ render(); }catch(err){ _loopErr(err); ctx.setTransform(1,0,0,1,0,0); uctx.setTransform(1,0,0,1,0,0); ctx.globalAlpha=1; uctx.globalAlpha=1; }
+    if(paused) drawPauseOverlay();
   } else { _loopLast=performance.now(); }
-  requestAnimationFrame(loop);
+  }catch(err){ _loopErr(err); }
+}
+// ESC 일시정지 오버레이(던전) — uiPanel 나무 패널 재사용
+function drawPauseOverlay(){
+  uctx.save(); uctx.setTransform(1,0,0,1,0,0); uctx.scale(UIS,UIS);
+  uctx.fillStyle="rgba(6,4,8,0.55)"; uctx.fillRect(0,0,CW,CH);
+  const msg = isMobile ? "일시정지 · 탭하여 계속" : "일시정지 · ESC 계속";
+  uctx.font='12px "Galmuri11", monospace';
+  const w=Math.ceil(uctx.measureText(msg).width)+36, h=30;
+  uiPanel(uctx, Math.round(CW/2-w/2), Math.round(CH/2-h/2), w, h, {fill:"#1d1510"});
+  uctx.textAlign="center"; uctx.textBaseline="middle";
+  uctx.fillStyle="#1a100a"; uctx.fillText(msg, CW/2, CH/2+1);
+  uctx.fillStyle="#ffd24a"; uctx.fillText(msg, CW/2, CH/2);
+  uctx.restore();
 }
 
 // ---- 입력 / 시작 -------------------------------------------------------
@@ -10064,6 +10199,14 @@ addEventListener("keydown",e=>{
   // v6: 프롤로그 표시 중이면 어떤 키로든 스킵
   if(document.getElementById("prologue").classList.contains("show")){
     if(k==="escape"||k==="enter"||k===" "){ e.preventDefault(); endPrologue(); }
+    return;
+  }
+  // 음소거 토글: Shift+M (M 단독은 던전 지도)
+  if(k==="m" && e.shiftKey && !e.ctrlKey && !e.repeat){ e.preventDefault(); toggleMute(); return; }
+  // 일시정지 중: ESC/P/Enter로 계속, 그 외 입력 무시(Ctrl+Shift 단축키는 통과)
+  if(paused && started && !(e.ctrlKey && e.shiftKey)){
+    e.preventDefault();
+    if(!e.repeat && (k==="escape"||k==="p"||k==="enter")) paused=false;
     return;
   }
   // v3.5: 깊은 어둠 31층 묻기 — Y/N 또는 ←→+Enter
@@ -10088,7 +10231,7 @@ addEventListener("keydown",e=>{
   // Ctrl+Shift+H → 던전에서 마을로 즉시 귀환 (도착지는 마을 동굴 옆과 동일)
   if(e.ctrlKey && e.shiftKey && k==="h"){
     e.preventDefault();
-    if(started && scene==="dungeon" && !transition){ goToTown(); }
+    if(canReturnHome()){ goToTown(); }
     return;
   }
   // v11: 관리자 Alt+F+L → 제1던전 모든 보스 처치 상태(가호+영혼+포털). 어느 화면에서나.
@@ -10186,6 +10329,8 @@ addEventListener("keydown",e=>{
   }
 
   // ── 던전 ──
+  // ESC: 열린 패널이 없으면 일시정지(지도가 열려 있으면 지도부터 닫기). 상점/인벤/층선택 닫기가 위에서 우선 처리됨
+  if(k==="escape"){ if(showMap) toggleMap(); else if(!gameOver) paused=true; return; }
   // v13: 붙잡힌 동안 — E 연타로 발버둥(탈출), 그 외 공격/상호작용 무시
   if(playerGrab){
     if(k==="e"||k===" "||k==="j") struggleGrab();
@@ -10271,7 +10416,7 @@ ui.addEventListener("click",e=>{
 let mouseBtns={left:false,right:false};
 function uiPt(e){ const rect=ui.getBoundingClientRect(); return {x:(e.clientX-rect.left)*(CW/rect.width), y:(e.clientY-rect.top)*(CH/rect.height)}; }
 ui.addEventListener("mousedown",e=>{
-  if(!started) return;
+  if(!started || paused) return;
   // v15: 인벤토리 열림 — 좌클릭 드래그로 아이템 집기 시작
   if(showInv && e.button===0){
     const p=uiPt(e); heldPtr=p; dragMoved=false;
@@ -10313,30 +10458,36 @@ ui.addEventListener("mouseleave",()=>{ mouseBtns.left=mouseBtns.right=false; });
 // v3.3: go/beginGame를 모듈 레벨로 끌어올려 START·CONTINUE 둘 다 호출 가능하게(기존 'go is not defined' 수정)
 function beginGame(continueRun){
   if(started) return;
+  resetTransientState(); reviving=false; gameOver=false; gameWon=false;
   floorNum=1; score=0; coins=0; MAX_HP=150; boss=null; bossCleared=false;
   runKills=0; runCoinsEarned=0; deepestFloor=1; charge=0; mana=MANA_MAX;    // v5/v6 (v9: 마나 가득)
   scene="dungeon"; transition=null; shop=null; dungeonTheme="stone";
   const hasSave = loadProgress();                            // 저장 기록 있으면 대기열에 적재
+  let contHp=null;                                           // CONTINUE 시 저장된 체력 복원
   // v3.1: CONTINUE면 저장된 던전 층/테마로 이어서, PRESS START면 1층(stone)부터 새로
   if(continueRun && hasSave && _pendingSave){
     if(typeof _pendingSave.floorNum==="number") floorNum=Math.max(1,_pendingSave.floorNum);
     if(_pendingSave.dungeonTheme) dungeonTheme=_pendingSave.dungeonTheme;
+    if(typeof _pendingSave.hp==="number") contHp=_pendingSave.hp;
     if(floorNum>deepestFloor) deepestFloor=floorNum;
   }
   player=null; buildFloor(); player.hp=MAX_HP;
   if(hasSave){ applyPendingSave(); buildFloor(); }           // 저장 적용(슬롯/코인/점수/해금 복원)
   player.hp=MAX_HP;
+  if(contHp!==null) player.hp=Math.max(1, Math.min(MAX_HP, Math.round(contHp)));   // 이어하기 = 저장 체력(1~최대)
   started=true;
   scheduleTownPrewarm();     // v17: 저장 적용 후 마을 캐시 확인/미리 생성(유휴 시간)
   if(isMobile){ positionTouch(window.innerHeight>=window.innerWidth); refreshTouchVisibility(); }
 }
+let _goLock=false;             // go()는 메뉴 1회당 한 번만(폰트 대기 안전 타이머가 프롤로그 중 재호출하던 문제)
 function go(continueRun){
-  if(started) return;          // 중복 시작 방지
+  if(started || _goLock) return;          // 중복 시작 방지
+  _goLock=true;
   document.getElementById("title").classList.add("hidden");
   // v6: 최초 진입이면 프롤로그 먼저 (CONTINUE는 프롤로그 건너뜀)
-  const seen = localStorage.getItem("de_prologue_seen");
+  const seen = lsGet("de_prologue_seen");
   if(!seen && !continueRun){
-    localStorage.setItem("de_prologue_seen","1");
+    lsSet("de_prologue_seen","1");
     runPrologue(()=>beginGame(false));
   } else {
     beginGame(continueRun);
@@ -10445,6 +10596,15 @@ function showRecToast(){
   t.textContent="🏆 새 기록 달성!"; t.style.display="block";
   setTimeout(()=>{ t.style.display="none"; }, 2600);
 }
+
+// 창 포커스 잃음/탭 숨김: 눌린 입력 해제(키 고착 방지) + 던전이면 자동 일시정지. 복귀/터치 시 오디오 재개
+window.addEventListener("blur", clearHeldInputs);
+document.addEventListener("visibilitychange", ()=>{
+  if(document.hidden){ clearHeldInputs(); if(started && scene==="dungeon" && !gameOver) paused=true; }
+  else resumeAudio();
+});
+window.addEventListener("touchstart", resumeAudio, {capture:true, passive:true});
+window.addEventListener("click", resumeAudio, true);
 
 // 레이아웃/방향 전환
 window.addEventListener("resize", layout);
