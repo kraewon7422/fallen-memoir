@@ -4,10 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>FALLEN MEMOIR</title>
-<link rel="stylesheet" href="galmuri-fonts.css">
+<!-- v17: 폰트 CSS(852KB)는 렌더를 막지 않게 preload → 로드되면 적용 (스크립트 없으면 noscript로 일반 적용) -->
+<link rel="preload" href="galmuri-fonts.css" as="style" onload="this.onload=null;this.rel='stylesheet';window.__fontCssLoaded=true;if(window.__onFontCss)window.__onFontCss();">
+<noscript><link rel="stylesheet" href="galmuri-fonts.css"></noscript>
 <!-- v5: Firebase Realtime Database (리더보드용). 설정만 채우면 자동 연동, 비워두면 로컬 전용으로 동작 -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<!-- v17: defer — 첫 화면 표시를 막지 않음. 리더보드는 로드 후 연결(LB.init 참고) -->
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script>
   /* ▼▼▼ 여기에 본인 Firebase 프로젝트 설정을 붙여넣으세요 (README 참고) ▼▼▼
      채우지 않으면 리더보드는 "이 기기 기록"만 표시하는 로컬 모드로 동작합니다. */
@@ -667,6 +670,7 @@ let playerGrab=null;        // v13: 어둠의 가지에 붙잡힌 상태 {arm, s
 let desertUnlocked=false;   // v8: 친구 영혼 봉헌 후 사막(제2) 던전 입구 개방(저장됨)
 let desertCleared=false;    // v14: 사막 던전 30층(깊은 어둠) 클리어 → 사막 1층 층선택 포털 해금
 let templeSouls=[];         // v11: 제사당에 봉헌한 보스 영혼 키(넣은 순서, 최대 6) — 지붕 램프 표시
+let bossSoulsClaimed=[];    // v17: 300코인 보상을 이미 받은 보스 영혼 키(보스별 최초 1회만 300)
 let quakeCS=null;           // v8: 지진/새 입구 자막 컷신
 let dungeonTheme="stone";   // v8: 현재 던전 테마 (stone | desert)
 // v5: 리더보드용 런 통계 + 터치 입력 벡터
@@ -1544,8 +1548,13 @@ function spawnPuzzles(er, start, exit){
 // v8: 층별 체력 보너스 — 1~5층 +0, 6~10층 +1 …  v12: 사막은 31층(+6) 기준
 function hpScale(){
   const base = Math.floor((floorNum-1)/5);
-  return dungeonTheme==="desert" ? base + 6 : base;
+  const steep = floorNum>10 ? Math.floor((floorNum-11)/10)+1 : 0;   // v17: 11층부터 추가 +1, 21층부터 +2 …
+  return (dungeonTheme==="desert" ? base + 6 : base) + steep;
 }
+// v17: 깊이 단계(5층마다 1, 사막은 +6) — 적 공격력·코인 드롭 스케일 공용
+function depthTier(){ return Math.floor((floorNum-1)/5) + (dungeonTheme==="desert" ? 6 : 0); }
+// v17: 적 피해 배율 — 5층마다 +10% (최대 +100%)
+function enemyDmgMul(){ return 1 + 0.10*Math.min(10, depthTier()); }
 function makeEnemy(type,x,y,er){
   const tint=(er()*2-1);   // v6: -1~1 색조 변이 (개체감)
   const bonus=hpScale();
@@ -3714,6 +3723,7 @@ function saveProgress(){
       warpUnlocked, desertUnlocked,        // v8: 포털/사막 던전 해금
       desertCleared,                        // v14: 사막 30층 클리어(사막 층선택 해금)
       templeSouls,                          // v11: 제사당 봉헌 보스 영혼(표시용)
+      bossSoulsClaimed,                     // v17: 300코인 받은 보스 영혼(선택 필드)
       keys:player.keys||0,
       savePoints:player.savePoints||0,      // v3.8: 세이브 포인트 영구 저장
       hp:player.hp, floorNum, dungeonTheme };   // v3.1: 현재 던전 테마도 저장(CONTINUE용)
@@ -3749,6 +3759,7 @@ function applyPendingSave(){
   warpUnlocked = !!d.warpUnlocked; desertUnlocked = !!d.desertUnlocked;   // v8
   desertCleared = !!d.desertCleared;   // v14
   templeSouls = Array.isArray(d.templeSouls) ? d.templeSouls.slice(0,6) : [];   // v11: 제사당 봉헌 표시 복원
+  bossSoulsClaimed = Array.isArray(d.bossSoulsClaimed) ? d.bossSoulsClaimed.slice() : templeSouls.slice();   // v17: 옛 저장은 봉헌 기록으로 대체
   recomputeMaxHp();                    // v8: 성직자 기도서 반영
   if(typeof d.keys==="number") player.keys=d.keys;
   if(typeof d.savePoints==="number") player.savePoints=d.savePoints;   // v3.8
@@ -3765,8 +3776,9 @@ function clearProgress(){
   warpUnlocked=false; warpPortal=null; floorSelect=null; desertUnlocked=false; desertCleared=false; dungeonTheme="stone";  // v8/v14: 포털/사막 해금 해제
   MAX_HP=150;                 // v8: 성직자 기도서 보너스 해제
   templeSouls=[];             // v11: 제사당에 봉헌한 보스 영혼 표시 초기화
+  bossSoulsClaimed=[];        // v17
   if(typeof LB==="object" && LB.reset) LB.reset();   // v11: 리더보드 최고 기록도 함께 초기화
-  if(typeof prerenderTown==="function" && townReady) prerenderTown();  // 제사당 램프 반영
+  if(typeof refreshTownArt==="function") refreshTownArt();  // 제사당 램프 반영(v17: 바뀐 부분만)
 }
 function newGamePlayer(start){
   player=null;                       // 인벤토리 초기화 강제
@@ -3774,7 +3786,7 @@ function newGamePlayer(start){
   player.hp=MAX_HP;
 }
 function curWeapon(){ return WEAPONS[player.weapon] || WEAPONS.torch; }
-// 무기 강화 레벨 (player.wlv[키] = 0,1,2...). 강화당 +1 데미지
+// 무기 강화 레벨 (player.wlv[키] = 0,1,2...). 강화 보너스는 wBonus() 참고 (v17: 쿨다운 비례)
 function wlvOf(key){ return (player.wlv && player.wlv[key]) || 0; }
 // v12: 강화 비용은 코인 기반, 단계마다 급증 (최대 +6)
 const WEAPON_UPGRADE_COSTS=[100,250,500,1000,2000,4000];  // +1,+2,+3,+4,+5,+6 에 필요한 코인
@@ -3792,13 +3804,20 @@ function upgradeWeapon(key){
   showPickup(WEAPONS[key].name+" 강화! +"+(lv+1)+" (피해↑)");
   sfx("pickup"); burst(player.x,player.y,"#ffd24a",12);
 }
+// v17: 강화 보너스 = 강화 단계 × (쿨다운/18) — 강화 1단계당 DPS 증가량이 모든 무기에서 같다
+//   (쿨다운 18 무기는 기존과 동일하게 +1/단계, 쌍단검(6)은 +0.33, 폭탄(50)은 +2.78)
+function wBonus(key){ const W=WEAPONS[key]; return wlvOf(key)*((W&&W.cd)||18)/18; }
 function effDmg(W){
   const key=player.weapon;
-  let d = W.dmg + wlvOf(key);            // 강화 보너스
+  let d = W.dmg + wBonus(key);           // 강화 보너스(소수 가능)
   if(blessActive("soldier")) d += 2;     // v8: 군인의 검성 — 모든 무기 +2
-  if(player.ePower>0) d = Math.ceil(d*1.6);  // 힘 포션
-  if(player.webT>0) d = Math.max(1, Math.floor(d*0.5));  // v8: 거미줄에 휘감기면 공격력 50%
-  return d;
+  if(player.ePower>0) d = d*1.6;         // 힘 포션
+  if(player.webT>0) d = d*0.5;           // v8: 거미줄에 휘감기면 공격력 50%
+  // v17: 소수점 피해는 누적해 정수로 지급(예: 1.33 → 1,1,2,1,1,2…) — 평균 DPS는 정확히 유지
+  const t = d + (player.dmgCarry||0);
+  const out = Math.max(1, Math.floor(t));
+  player.dmgCarry = Math.max(0, t - out);
+  return out;
 }
 function solid(tx,ty){
   if(tx<0||ty<0||tx>=MAP_W||ty>=MAP_H) return true;
@@ -4085,6 +4104,7 @@ function startAttack(){
 
 function hurt(dmg, ranged){
   if(player.inv>0 || gameOver) return;
+  if(dmg>=3 && scene==="dungeon") dmg=Math.round(dmg*enemyDmgMul());   // v17: 깊이에 따른 적 피해 증가(1~2 지속피해는 제외)
   if(!ranged && blessActive("seamstress")) dmg=Math.max(1, dmg-2);  // v8: 제봉사의 옷감 — 근거리 피해 -2
   if(player.eShield>0) dmg=Math.max(1, Math.ceil(dmg*0.5));  // 수호: 피해 절반
   if(player.armorTier>0) dmg=Math.max(1, Math.ceil(dmg*(1-ARMORS[player.armorTier-1].red))); // 방어구
@@ -4504,8 +4524,8 @@ function updateItems(){
       if(d < it.r+player.r){           // 금화: 닿으면 코인 증가
         it.taken=true;
         coins += it.value; runCoinsEarned += it.value;   // v5 집계
-        showPickup("코인 +"+it.value);
-        burst(it.x,it.y,"#ffd24a",8); sfx("pickup");
+        if(!it.small || pickupMsgT<=0) showPickup("코인 +"+it.value);   // v17: 처치 코인은 다른 알림을 덮지 않음
+        burst(it.x,it.y,"#ffd24a",it.small?4:8); sfx("pickup");
       }
     }else if(it.type==="chest"){
       if(!it.opened && d < it.r+player.r+6){
@@ -5002,6 +5022,12 @@ function drawFireworks(){
   }
   uctx.globalAlpha=1; uctx.restore();
 }
+// v17: 처치 시 작은 금화(60%) — 1~3코인, 깊어질수록 조금 더(15층마다 +1). 기존 금화 줍기 경로 사용
+function dropKillCoins(e){
+  if(Math.random()>=0.6) return;
+  const value=1+Math.floor(Math.random()*3)+Math.floor(depthTier()/3);
+  items.push({type:"gold", x:e.x, y:e.y, r:5, value, small:true, bob:Math.random()*6.28, taken:false});
+}
 // 적 처치: 죽음 처리 + 점수 + 효과음 (중복 가산 방지)
 function killEnemy(e){
   if(!e.alive) return;
@@ -5010,6 +5036,7 @@ function killEnemy(e){
     e.dyingT=180; e.hp=0;
     burst(e.x,e.y,"#7ee06a",14); score+=20; runKills++;
     charge=Math.min(CHARGE_MAX, charge+CHARGE_PER_KILL); sfx("hit");
+    dropKillCoins(e);
     if(Math.random()<0.12) items.push({type:"soul", skey:"old", x:e.x, y:e.y, r:7, bob:Math.random()*6.28, taken:false});
     return;   // alive 유지(페이드 동안), updateEnemies에서 처리
   }
@@ -5019,6 +5046,7 @@ function killEnemy(e){
   runKills++;                                  // v5: 처치 수 집계
   charge=Math.min(CHARGE_MAX, charge+CHARGE_PER_KILL);   // v6: 차지 충전
   sfx("hit");
+  dropKillCoins(e);                            // v17: 작은 코인 드롭
   // v7 Phase4: 영혼 드롭 (일반 몹 ~12%)
   if(Math.random()<0.12){
     const skey = e.type==="bat"?"lost" : e.type==="skeleton"?"guard" : "old";
@@ -5143,9 +5171,16 @@ function recomputeMaxHp(){
   MAX_HP = 150 + (blessActive("cleric")?50:0);
   if(player && player.hp>MAX_HP) player.hp=MAX_HP;
 }
+// v17: 새 배열을 만들지 않고 제자리 압축 + 최대 400개(넘치면 가장 오래된 것부터 제거)
+const PARTICLE_CAP=400;
 function updateParticles(){
-  for(const p of particles){ p.x+=p.vx; p.y+=p.vy; p.vx*=0.9; p.vy*=0.9; p.life--; }
-  particles=particles.filter(p=>p.life>0);
+  let n=0;
+  for(let i=0;i<particles.length;i++){
+    const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vx*=0.9; p.vy*=0.9; p.life--;
+    if(p.life>0) particles[n++]=p;
+  }
+  if(n>PARTICLE_CAP){ particles.copyWithin(0, n-PARTICLE_CAP, n); n=PARTICLE_CAP; }
+  particles.length=n;
 }
 // ── 친구의 가호: 노란 정령 공전 + 닿는 적에게 1 데미지 ──
 let friendOrbA=0;
@@ -6299,7 +6334,7 @@ function drawInventory(){
     uctx.fillStyle="#ffe6a0"; uctx.font='10px "Galmuri11", monospace';
     uctx.fillText(SW.name + (selKey===player.weapon?"  ● 장착중":""), CW/2, panelY+13);
     uctx.fillStyle="#b8b2a6"; uctx.font='8px "Galmuri9", monospace';
-    const dmgStr=(SW.dmg+lv)+(lv>0?" (+"+lv+")":"");
+    const dmgStr=(Math.round((SW.dmg+wBonus(selKey))*10)/10)+(lv>0?" (+"+lv+")":"");
     const desc=kindLabel+" / 피해 "+dmgStr+" / 사거리 "+SW.reach+"  —  "+(SW.flavor||SW.desc||"");
     const dl=wrapLines(uctx, desc, CW-30);
     uctx.fillText(dl[0]||"", CW/2, panelY+25);
@@ -6440,16 +6475,20 @@ function drawFullMap(){
 }
 
 // ---- 렌더 --------------------------------------------------------------
+let _hudEl=null, _panelEls=null;
 function render(){
   // v3.20: 인벤/지도/상점/메뉴 패널 등 전체화면 오버레이가 뜨면 상단 HUD를 숨겨 텍스트 겹침 방지(특히 태블릿)
-  const hudEl=document.getElementById("hud");
+  // v17: 요소 목록은 한 번만 찾고(패널은 정적 HTML), display는 바뀔 때만 기록 — 매 프레임 DOM 조회/스타일 쓰기 제거
+  if(!_hudEl){ _hudEl=document.getElementById("hud"); _panelEls=document.querySelectorAll(".panel"); }
+  const hudEl=_hudEl;
   if(hudEl){
     // 보이는 전체화면 패널(.panel)이 있는지 — over/win/adminPanel 등
     let panelOpen=false;
-    for(const p of document.querySelectorAll(".panel")){ if(!p.classList.contains("hidden")){ panelOpen=true; break; } }
+    for(const p of _panelEls){ if(!p.classList.contains("hidden")){ panelOpen=true; break; } }
     // v3.25: 마을/집에서는 상단 오브젝티브 텍스트를 숨긴다(HP바 등과 겹침 방지). 던전에서만 표시.
     const hideHud = showInv || showMap || (typeof shop!=="undefined"&&shop) || panelOpen || scene==="town" || scene==="house";
-    hudEl.style.display = hideHud ? "none" : "flex";
+    const disp = hideHud ? "none" : "flex";
+    if(hudEl.style.display!==disp) hudEl.style.display = disp;
   }
   if(scene==="town"){ renderTown(); return; }
   if(scene==="house"){ renderHouse(); return; }
@@ -7041,7 +7080,8 @@ function hexRGB(h){
   if(h[0]!=="#"){ const m=h.match(/\d+/g); return [+m[0],+m[1],+m[2]]; }
   const n=parseInt(h.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255];
 }
-function newSprite(w,h){ const c=document.createElement("canvas"); c.width=w; c.height=h; const g=c.getContext("2d"); g.imageSmoothingEnabled=false; return {c,g,w,h}; }
+// v17: 모든 스프라이트는 outlineSprite에서 getImageData로 읽히므로 CPU 캔버스(willReadFrequently)로 생성 — GPU 읽기 지연 제거
+function newSprite(w,h){ const c=document.createElement("canvas"); c.width=w; c.height=h; const g=c.getContext("2d",{willReadFrequently:true}); g.imageSmoothingEnabled=false; return {c,g,w,h}; }
 function pEll(g,cx,cy,rx,ry,col){   // 픽셀 타원(행 단위, 겹침 없음 → 반투명도 균일)
   g.fillStyle=col;
   for(let y=-ry;y<=ry;y++){ const w=Math.round(rx*Math.sqrt(Math.max(0,1-(y*y)/((ry+0.5)*(ry+0.5))))); g.fillRect(Math.round(cx-w),Math.round(cy+y),w*2+1,1); }
@@ -7104,6 +7144,33 @@ function prerenderTown(){
   buildTownSprites(g);
   townSprites.sort((a,b)=>a.base-b.base);
   townGroundK=null;
+  townPaintedDesert=desertUnlocked;   // v17: 어떤 해금 상태로 그렸는지 기록(refreshTownArt)
+}
+// v17: 바뀐 부분만 다시 그림 — 사막 해금 상태가 다르면 전체, 아니면 제사당 영혼 현판(램프)만
+let townPaintedDesert=null, soulBoardPos=null;
+function refreshTownArt(){
+  if(!townReady || !tctx) return;
+  if(townPaintedDesert!==desertUnlocked || !soulBoardPos) prerenderTown();
+  else {   // 램프 줄만 잘라 다시 그림(위 지붕 처마가 현판 윗변을 덮으므로 그 부분은 건드리지 않음)
+    const p=soulBoardPos; tctx.save(); tctx.beginPath(); tctx.rect(Math.round(p.cx-32), p.beamY-25, 64, 15); tctx.clip();
+    drawSoulBoard(tctx, p.cx, p.beamY); tctx.restore();
+  }
+}
+// v17: 마을 미리 만들기 — 첫 마을 진입 시 0.6~1.7초 멈춤 제거. 타이틀/첫 층 이후 유휴 시간에 실행.
+//   initTown은 마을 전용 상태(townGrid·npcs·나무 등)만 만들고 플레이어/던전 상태는 건드리지 않는다.
+//   타이틀에선 아직 저장이 적용 전이므로 저장의 사막 해금·봉헌 램프를 잠시 빌려 그린다(이후 같은 값이 적용됨).
+function scheduleTownPrewarm(){
+  const run=()=>{
+    if(scene==="town" || transition) return;          // 진입 중이면 원래 경로(goToTown)에 맡김
+    if(townReady){ refreshTownArt(); return; }        // 저장 적용 후 상태가 달라졌으면 그 부분만 갱신
+    if(started){ initTown(); return; }
+    let sd=null; try{ sd=JSON.parse(localStorage.getItem(SAVE_KEY)||"null"); }catch(e){}
+    const du=desertUnlocked, ts=templeSouls;
+    if(sd){ desertUnlocked=!!sd.desertUnlocked; templeSouls=Array.isArray(sd.templeSouls)?sd.templeSouls.slice(0,6):[]; }
+    try{ initTown(); } finally { desertUnlocked=du; templeSouls=ts; }
+  };
+  if(window.requestIdleCallback) requestIdleCallback(run,{timeout:2500});
+  else setTimeout(run,300);
 }
 
 // 지면: 픽셀 단위 계산(잔디 결·자갈 보로노이·길 가장자리 풀 덮임·모래 소용돌이·연못)
@@ -7871,6 +7938,7 @@ function drawTemple(g, t){
 // v11: 제사당 두 지붕 사이의 검은 혼백 현판 + 보스 영혼 6램프
 //  · 봉헌한 보스 영혼 수만큼 왼쪽부터 점등, 각 램프는 넣은 영혼의 색
 function drawSoulBoard(g, cx, beamY){
+  soulBoardPos={cx,beamY};   // v17: 램프만 다시 그릴 때 위치 재사용(refreshTownArt)
   const bw=64, bx=Math.round(cx-bw/2), by=beamY-28, bh=16;
   // 검은 판 + 목재/금색 테두리
   g.fillStyle="#3a2e16"; g.fillRect(bx-2, by-2, bw+4, bh+4);     // 바깥 목재 테
@@ -8067,12 +8135,15 @@ function offerAtTemple(){
   }
   player.souls[pick]--;
   const isBossSoul = BOSS_SOUL_KEYS.indexOf(pick)>=0;
-  const reward = isBossSoul ? 300 : 30;   // v8: 보스 영혼 300코인
+  // v17: 보스 영혼 300코인은 보스별 최초 1회만 — 이후엔 일반 영혼과 같은 30코인
+  const firstBoss = isBossSoul && bossSoulsClaimed.indexOf(pick)<0;
+  if(firstBoss) bossSoulsClaimed.push(pick);
+  const reward = firstBoss ? 300 : 30;   // v8: 보스 영혼 300코인
   coins+=reward; runCoinsEarned+=reward;
   // v11: 보스 영혼을 바치면 제사당 지붕 램프에 순서대로 점등
   if(isBossSoul && templeSouls.indexOf(pick)<0 && templeSouls.length<6){
     templeSouls.push(pick);
-    if(typeof prerenderTown==="function" && townReady) prerenderTown();   // 램프 갱신
+    if(typeof refreshTownArt==="function") refreshTownArt();   // 램프 갱신(v17: 현판만 다시 그림)
   }
   const S=SOULS[pick];
   // v8: 파란 영혼이 제단에서 하늘로 올라가는 연출
@@ -8464,7 +8535,7 @@ function shopOptions(kind){
     for(const wk of player.inv_items){
       const lv=wlvOf(wk), W=WEAPONS[wk];
       if(lv>=WEAPON_MAX_LV){ out.push({label:W.name, sub:"강화 최대 (+"+WEAPON_MAX_LV+")", disabled:true}); }
-      else out.push({label:W.name+"  +"+(lv+1), sub:"피해 +1", price:upgradeCostCoins(wk),
+      else out.push({label:W.name+"  +"+(lv+1), sub:"피해 +"+(Math.round(W.cd/18*10)/10), price:upgradeCostCoins(wk),
         action:()=>{ if(!player.wlv)player.wlv={}; player.wlv[wk]=lv+1; showPickup(W.name+" 강화! +"+(lv+1)); }});
     }
   } else if(kind==="weapon"){
@@ -9540,9 +9611,11 @@ const LB = (function(){
     // Firebase 시도
     const cfg=window.FIREBASE_CONFIG;
     const configured = cfg && cfg.databaseURL && !/PASTE/.test(cfg.databaseURL);
-    if(configured && window.firebase){
+    // v17: Firebase 스크립트는 defer — 아직 없으면 로컬 모드로 시작하고, 문서 로드 후(스크립트 실행 후) 다시 연결 시도
+    const connect=()=>{
+      if(online || !configured || typeof firebase==="undefined" || !firebase.database) return;
       try{
-        firebase.initializeApp(cfg);
+        if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(cfg);
         db=firebase.database();
         online=true;
         db.ref("scores").on("value", snap=>{
@@ -9550,6 +9623,12 @@ const LB = (function(){
           render();
         }, err=>{ online=false; setStatus("⚠ 연결 실패 — 로컬 모드"); renderLocal(); });
       }catch(e){ online=false; }
+      render();
+    };
+    connect();
+    if(configured && !online){
+      if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", connect, {once:true});
+      else window.addEventListener("load", connect, {once:true});
     }
     if(!online){ renderLocal(); }
     render();
@@ -9667,30 +9746,34 @@ function positionTouch(portrait){
   // v3.20: 관리자 버튼 — 지도 버튼 바로 왼쪽(우측 상단)
   if(elBtnAdmin){ elBtnAdmin.style.right="76px"; elBtnAdmin.style.top="56px"; elBtnAdmin.style.left="auto"; elBtnAdmin.style.bottom="auto"; }
 }
+// v17: 매 프레임 호출되므로 값이 바뀔 때만 style에 기록(불필요한 스타일 재계산 방지)
+function setDisp(el,v){ if(el && el.style.display!==v) el.style.display=v; }
 function refreshTouchVisibility(){
   if(!isMobile) return;
-  if(!started){ elBtnA.style.display="none"; elBtnInv.style.display="none"; elBtnMenu.style.display="none"; elJoy.style.display="none"; if(elBtnCharge)elBtnCharge.style.display="none"; if(elBtnHome)elBtnHome.style.display="none"; if(elBtnAdmin)elBtnAdmin.style.display="none"; if(elBtnMap)elBtnMap.style.display="none"; return; }
+  if(!started){ setDisp(elBtnA,"none"); setDisp(elBtnInv,"none"); setDisp(elBtnMenu,"none"); setDisp(elJoy,"none"); setDisp(elBtnCharge,"none"); setDisp(elBtnHome,"none"); setDisp(elBtnAdmin,"none"); setDisp(elBtnMap,"none"); return; }
   const inDungeon = scene==="dungeon";
   // v3.20: 인벤토리/상점/지도 등 전체화면 오버레이가 떠 있으면 상단 버튼을 숨겨 슬롯 가림·오터치 방지
   const overlayOpen = showInv || (typeof shop!=="undefined" && shop);
-  elBtnA.style.display = (inDungeon && !overlayOpen) ? "flex" : "none";
-  elBtnMenu.style.display = overlayOpen ? "none" : "flex";              // v6: 모든 씬에서 메뉴(처음으로) 버튼
-  if(elBtnAdmin) elBtnAdmin.style.display = overlayOpen ? "none" : "flex";   // v3.9: 모든 씬에서 관리자 버튼
-  if(elAdminCmds) elAdminCmds.style.display = (adminMode && inDungeon && !overlayOpen) ? "flex" : "none";  // v3.10: 관리자 ON + 던전
-  if(elBtnHome) elBtnHome.style.display = (inDungeon && !overlayOpen) ? "flex" : "none";  // v8: 던전에서만 마을 복귀
-  if(elBtnMap) elBtnMap.style.display = (inDungeon && !overlayOpen) ? "flex" : "none";    // v3.11: 던전에서만 지도
+  setDisp(elBtnA, (inDungeon && !overlayOpen) ? "flex" : "none");
+  setDisp(elBtnMenu, overlayOpen ? "none" : "flex");              // v6: 모든 씬에서 메뉴(처음으로) 버튼
+  setDisp(elBtnAdmin, overlayOpen ? "none" : "flex");   // v3.9: 모든 씬에서 관리자 버튼
+  setDisp(elAdminCmds, (adminMode && inDungeon && !overlayOpen) ? "flex" : "none");  // v3.10: 관리자 ON + 던전
+  setDisp(elBtnHome, (inDungeon && !overlayOpen) ? "flex" : "none");  // v8: 던전에서만 마을 복귀
+  setDisp(elBtnMap, (inDungeon && !overlayOpen) ? "flex" : "none");    // v3.11: 던전에서만 지도
   // v3.21: 인벤/상점이 열리면 인벤 버튼·조이스틱·차지도 모두 숨긴다.
   //   (이들은 z-index가 인벤 캔버스보다 위라, 떠 있으면 핫바/슬롯 터치를 가로채 '횃불 칸이 안 눌리는' 버그를 유발)
   // v3.24: 인벤 버튼은 오버레이(인벤/상점) 중에도 남겨 둔다 — 토글이라 다시 누르면 닫기 역할.
   //   (캔버스 아래 검은 여백에 떠 있어 인벤 패널과 겹치지 않음)
-  elBtnInv.style.display = "flex";
-  elJoy.style.display = overlayOpen ? "none" : "block";
+  setDisp(elBtnInv, "flex");
+  setDisp(elJoy, overlayOpen ? "none" : "block");
   if(elBtnCharge){
-    elBtnCharge.style.display = (inDungeon && !overlayOpen) ? "flex" : "none";
+    setDisp(elBtnCharge, (inDungeon && !overlayOpen) ? "flex" : "none");
     // 게이지 링 갱신 (둘레 2πr ≈ 157)
     const ratio=Math.min(1,charge/CHARGE_MAX);
-    elChargeRing.style.strokeDashoffset = (157*(1-ratio)).toFixed(1);
-    elBtnCharge.classList.toggle("ready", charge>=CHARGE_MAX);
+    const off=(157*(1-ratio)).toFixed(1);
+    if(elChargeRing._off!==off){ elChargeRing.style.strokeDashoffset = off; elChargeRing._off=off; }
+    const ready=charge>=CHARGE_MAX;
+    if(elBtnCharge.classList.contains("ready")!==ready) elBtnCharge.classList.toggle("ready", ready);
   }
 }
 
@@ -10244,6 +10327,7 @@ function beginGame(continueRun){
   if(hasSave){ applyPendingSave(); buildFloor(); }           // 저장 적용(슬롯/코인/점수/해금 복원)
   player.hp=MAX_HP;
   started=true;
+  scheduleTownPrewarm();     // v17: 저장 적용 후 마을 캐시 확인/미리 생성(유휴 시간)
   if(isMobile){ positionTouch(window.innerHeight>=window.innerWidth); refreshTouchVisibility(); }
 }
 function go(continueRun){
@@ -10260,11 +10344,13 @@ function go(continueRun){
 }
 function startWithFonts(continueRun){
   if(document.fonts && document.fonts.ready){
-    Promise.all([
+    const loadFonts=()=>Promise.all([
       document.fonts.load('11px "Galmuri11"','가'),
       document.fonts.load('9px "Galmuri9"','가'),
       document.fonts.load('7px "Galmuri7"','가'),
     ]).then(()=>go(continueRun)).catch(()=>go(continueRun));
+    // v17: 폰트 CSS가 비동기 로드되므로, 아직이면 CSS 도착 시점에 폰트 로드(캔버스 글자는 매 프레임 그려 늦게 와도 자동 적용)
+    if(window.__fontCssLoaded) loadFonts(); else window.__onFontCss=loadFonts;
     setTimeout(()=>go(continueRun), 1500);   // 안전장치: 최대 1.5초 후 무조건 시작
   } else { go(continueRun); }
 }
@@ -10369,6 +10455,7 @@ LB.init();
 layout();
 refreshContinueBtn();   // v3.1: 저장 있으면 CONTINUE 버튼 노출
 loop();
+scheduleTownPrewarm();  // v17: 타이틀 화면 유휴 시간에 마을 미리 만들기
 </script>
 </body>
 </html>
