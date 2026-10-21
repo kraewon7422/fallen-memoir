@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>FALLEN MEMOIR</title>
 <!-- v17: 폰트 CSS(852KB)는 렌더를 막지 않게 preload → 로드되면 적용 (스크립트 없으면 noscript로 일반 적용) -->
 <link rel="preload" href="galmuri-fonts.css" as="style" onload="this.onload=null;this.rel='stylesheet';window.__fontCssLoaded=true;if(window.__onFontCss)window.__onFontCss();">
@@ -221,45 +221,43 @@
   }
 
   /* ===== 터치 컨트롤 오버레이 ===== */
+  /* v18: 픽셀 아트 나무+금 버튼 — 버튼 이미지는 JS(makeTouchArt)가 캔버스로 생성해 background-image로 입힘 */
   #touch{ position:fixed; inset:0; z-index:8; pointer-events:none; display:none; }
   body.mobile #touch{ display:block; }
   #touch .tbtn{
-    position:absolute; pointer-events:auto; width:68px; height:68px; border-radius:50%;
-    background:rgba(28,26,36,.62); border:2px solid rgba(120,116,140,.5);
-    color:#e8e2d0; font-size:26px; display:flex; align-items:center; justify-content:center;
+    position:absolute; pointer-events:auto; width:52px; height:52px; border-radius:0;
+    background:transparent center/100% 100% no-repeat; border:none;
+    image-rendering:pixelated; color:#ffe6a0; font-size:0; display:flex; align-items:center; justify-content:center;
     margin:0; padding:0; user-select:none; -webkit-user-select:none; touch-action:none;
-    box-shadow:0 2px 10px rgba(0,0,0,.4);
+    box-shadow:none; filter:drop-shadow(0 3px 0 rgba(0,0,0,.55)); -webkit-tap-highlight-color:transparent;
   }
-  #touch .tbtn:active{ background:rgba(255,154,60,.4); transform:scale(.94); }
-  #touch .tbtn.small{ width:56px; height:56px; font-size:20px; }
+  #touch .tbtn:active{ filter:brightness(1.35) drop-shadow(0 1px 0 rgba(0,0,0,.55)); transform:translateY(2px); }
   #adminCmds{ align-items:flex-end; }
-  #adminCmds .acmd{ width:96px; height:34px; border-radius:8px; font-size:12px; color:#ffd24a;
-    background:rgba(40,30,12,.82); border:2px solid rgba(255,210,74,.55); font-family:inherit; }
-  #adminCmds .acmd:active{ transform:scale(.94); background:rgba(255,210,74,.35); color:#1a1010; }
-  #btnA{ background:rgba(180,60,40,.5); border-color:rgba(255,120,90,.6); }
+  #adminCmds .acmd{ width:96px; height:34px; border-radius:0; font-size:12px; color:#ffd24a; letter-spacing:0;
+    background:#1c1411; border:2px solid #6b4127; box-shadow:0 0 0 2px #120b08, inset 0 1px 0 #9a6a3e; font-family:inherit; }
+  #adminCmds .acmd:active{ transform:translateY(1px); background:#4a2c18; }
   /* 강력한 공격(차지) 버튼 + 게이지 링 */
   #btnCharge{
-    position:absolute; pointer-events:auto; width:56px; height:56px; border-radius:50%;
+    position:absolute; pointer-events:auto; width:64px; height:64px; border-radius:50%;
     border:none; margin:0; padding:0; touch-action:none; user-select:none; -webkit-user-select:none;
     background:transparent; display:flex; align-items:center; justify-content:center;
-    color:#fff2c0; font-size:22px; box-shadow:0 2px 10px rgba(0,0,0,.4);
+    box-shadow:none; filter:drop-shadow(0 3px 0 rgba(0,0,0,.55)); -webkit-tap-highlight-color:transparent;
   }
+  #btnCharge svg{ shape-rendering:crispEdges; }
   #btnCharge .cInner{
-    position:absolute; inset:5px; border-radius:50%;
-    background:rgba(60,40,20,.7); display:flex; align-items:center; justify-content:center;
+    position:absolute; inset:12.5%; background:transparent center/100% 100% no-repeat; image-rendering:pixelated;
   }
-  #btnCharge.ready .cInner{ background:rgba(180,120,30,.85); animation:chargePulse .8s ease-in-out infinite; }
-  @keyframes chargePulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(255,210,74,.6);} 50%{ box-shadow:0 0 0 6px rgba(255,210,74,0);} }
-  #btnCharge:active{ transform:scale(.94); }
+  #btnCharge.ready .cInner{ animation:chargePulse .8s steps(2) infinite; }
+  @keyframes chargePulse{ 0%,100%{ filter:brightness(1); } 50%{ filter:brightness(1.6); } }
+  #btnCharge:active{ transform:translateY(2px); }
   #joy{
-    position:absolute; pointer-events:auto; width:128px; height:128px; border-radius:50%;
-    background:radial-gradient(circle, rgba(40,38,52,.42), rgba(20,18,28,.30));
-    border:2px solid rgba(120,116,140,.4); touch-action:none;
+    position:absolute; pointer-events:auto; width:128px; height:128px;
+    background:transparent center/100% 100% no-repeat; image-rendering:pixelated; touch-action:none;
   }
   #joyKnob{
-    position:absolute; left:50%; top:50%; width:54px; height:54px; margin:-27px 0 0 -27px;
-    border-radius:50%; background:radial-gradient(circle at 38% 34%, #6a6680, #34323f);
-    border:2px solid rgba(180,176,200,.6); box-shadow:0 2px 8px rgba(0,0,0,.5);
+    position:absolute; left:50%; top:50%; width:48px; height:48px; margin:-24px 0 0 -24px;
+    background:transparent center/100% 100% no-repeat; image-rendering:pixelated;
+    filter:drop-shadow(0 3px 0 rgba(0,0,0,.5));
   }
   #btnMenu{ position:absolute; pointer-events:auto; }
   #btnHome{ position:absolute; pointer-events:auto; }
@@ -267,6 +265,14 @@
   /* 모바일에서 HUD/힌트 글자 키우고 데스크톱 힌트바 숨김 */
   body.mobile #hintbar{ display:none; }
   body.mobile #hud{ font-size:12px; }
+  /* v18: 힌트바 — 화면 아래 여백이 있으면 캔버스 밖(아래)에, 없으면 안쪽에 두되 상황에 따라 숨김 */
+  #hintbar.outside{ top:calc(100% + 7px); bottom:auto; left:0; right:0; text-align:center; }
+  #hintbar.off{ display:none; }
+  /* v18: 게임 시작 전(타이틀/프롤로그)에는 HUD·터치 컨트롤을 아예 숨김 */
+  body:not(.ingame) #hud, body:not(.ingame) #hintbar, body:not(.ingame) #touch{ display:none !important; }
+  /* v18: 노치/홈바 안전영역 측정용 */
+  #safeProbe{ position:fixed; left:0; top:0; width:0; height:0; visibility:hidden; pointer-events:none;
+    padding:env(safe-area-inset-top,0px) env(safe-area-inset-right,0px) env(safe-area-inset-bottom,0px) env(safe-area-inset-left,0px); }
 
   /* v6: 프롤로그 (검은 화면 타이핑 인트로) */
   #prologue{
@@ -291,6 +297,7 @@
 </style>
 </head>
 <body>
+<div id="safeProbe"></div>
 <div id="wrap">
   <div id="stage">
     <canvas id="game"></canvas>
@@ -403,21 +410,22 @@
     <!-- v5: 터치 컨트롤 -->
     <div id="touch">
       <div id="joy"><div id="joyKnob"></div></div>
-      <button class="tbtn" id="btnA"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19l8-8M14 4l6 6-3 1-1 3-6-6 1-3z"/><path d="M5 19l1.5-1.5M3 21l2-2"/></svg></button>
-      <button id="btnCharge">
-        <svg width="56" height="56" viewBox="0 0 56 56" style="position:absolute;inset:0;transform:rotate(-90deg)">
-          <circle cx="28" cy="28" r="25" fill="none" stroke="rgba(80,74,60,.5)" stroke-width="4"/>
-          <circle id="chargeRing" cx="28" cy="28" r="25" fill="none" stroke="#ffd24a" stroke-width="4"
-                  stroke-linecap="round" stroke-dasharray="157" stroke-dashoffset="157"/>
+      <button class="tbtn" id="btnA" aria-label="공격"></button>
+      <button id="btnCharge" aria-label="강력한 공격">
+        <svg width="100%" height="100%" viewBox="0 0 64 64" style="position:absolute;inset:0;transform:rotate(-90deg)">
+          <circle cx="32" cy="32" r="28" fill="none" stroke="#120b08" stroke-width="7"/>
+          <circle cx="32" cy="32" r="28" fill="none" stroke="#3d2416" stroke-width="4"/>
+          <circle id="chargeRing" cx="32" cy="32" r="28" fill="none" stroke="#ffd24a" stroke-width="4"
+                  stroke-linecap="butt" stroke-dasharray="176" stroke-dashoffset="176"/>
         </svg>
-        <span class="cInner"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg></span>
+        <span class="cInner"></span>
       </button>
-      <button class="tbtn small" id="btnInv"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V7a6 6 0 0 1 12 0v2"/><rect x="4" y="9" width="16" height="12" rx="2"/><path d="M9 13h6"/></svg></button>
-      <button class="tbtn small" id="btnMenu">≡</button>
-      <button class="tbtn small" id="btnAdmin"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><circle cx="12" cy="15.5" r="1.3"/></svg></button>
-      <button class="tbtn small" id="btnHome"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7"/><path d="M6 10v9h12v-9"/><path d="M10 19v-5h4v5"/></svg></button>
-      <button class="tbtn small" id="btnMap"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg></button>
-      <button class="tbtn small" id="btnMute">🔊</button>
+      <button class="tbtn small" id="btnInv" aria-label="인벤토리"></button>
+      <button class="tbtn small" id="btnMenu" aria-label="메뉴"></button>
+      <button class="tbtn small" id="btnAdmin" aria-label="관리자"></button>
+      <button class="tbtn small" id="btnHome" aria-label="마을로"></button>
+      <button class="tbtn small" id="btnMap" aria-label="지도"></button>
+      <button class="tbtn small" id="btnMute" aria-label="효과음"></button>
       <div id="adminCmds" style="display:none; position:absolute; right:12px; top:120px; flex-direction:column; gap:6px; pointer-events:auto;">
         <button class="acmd" id="acNext">▼ 다음 층</button>
         <button class="acmd" id="acBoss">☠ 보스 처치</button>
@@ -469,7 +477,7 @@ ui.style.width  = (CW*ZOOM)+"px";
 ui.style.height = (CH*ZOOM)+"px";
 const uctx = ui.getContext("2d");
 uctx.imageSmoothingEnabled = false;
-const UIS = ZOOM;   // UI 좌표 배율 (게임 좌표 × UIS = UI 픽셀)
+let UIS = ZOOM;     // UI 좌표 배율 (게임 좌표 × UIS = UI 픽셀) — v18: layout()이 표시배율×DPR(정수)로 갱신
 
 // 던전 전체를 한 번만 그려두는 오프스크린 캔버스
 const map = document.createElement("canvas");
@@ -553,7 +561,7 @@ function applyViewport(vw,vh){
   if(vw===VIEW_W && vh===VIEW_H && cv.width===CW) return;
   VIEW_W=vw; VIEW_H=vh; CW=vw*TILE; CH=vh*TILE;
   cv.width=CW; cv.height=CH;
-  ui.width=CW*ZOOM; ui.height=CH*ZOOM;
+  ui.width=CW*UIS; ui.height=CH*UIS;
   light.width=CW; light.height=CH;
   ctx.imageSmoothingEnabled=false; uctx.imageSmoothingEnabled=false; lctx.imageSmoothingEnabled=false;
   if(typeof player==="object" && player) updateCam();
@@ -575,25 +583,58 @@ function layout(){
     applyViewport(26,16);
   }
 
-  // 표시 영역 (세로 모바일은 아래쪽을 조이스틱용으로 비움)
-  let availW=W, availH=H;
-  if(isMobile && portrait) availH = Math.round(H*0.62);
-  const s = Math.min(availW/CW, availH/CH) * (isMobile?1:1);
-  const dispScale = isMobile ? s : ZOOM;          // 데스크톱은 기존 2배 유지
-  const dispW=Math.round(CW*dispScale), dispH=Math.round(CH*dispScale);
+  // v18: 표시 배율 — 데스크톱은 창에 맞는 최대 정수배, 모바일은 배율×DPR이 정수가 되도록 스냅
+  readSafeArea();
+  const dpr=Math.max(1, window.devicePixelRatio||1);
+  let availW=W-SAFE.l-SAFE.r, availH=H-SAFE.t-SAFE.b;
+  if(isMobile && portrait) availH = Math.max(Math.round(availH*0.5), availH-300);   // 아래: 버튼 줄 + 조이스틱
+  if(isMobile && !portrait) availW = availW - 2*TOUCH_BAND;                          // 좌우: 버튼 밴드
+  let s = Math.min(availW/CW, availH/CH);
+  if(!isMobile){
+    if(s>=1) s=Math.floor(s);                       // 정수 배율(픽셀 균일)
+  } else {
+    const snap=Math.floor(s*dpr)/dpr;               // 화면 픽셀 기준 정수배
+    if(snap>0 && snap>=s*0.85) s=snap;
+  }
+  dispScale=s;
+  const dispW=Math.round(CW*s), dispH=Math.round(CH*s);
   cv.style.width=dispW+"px"; cv.style.height=dispH+"px";
   ui.style.width=dispW+"px"; ui.style.height=dispH+"px";
   stageEl.style.width=dispW+"px"; stageEl.style.height=dispH+"px";
-  // 세로 모바일: 상단 정렬
+  // UI 캔버스 백버퍼 = 표시 크기 × DPR (정수배) → 글자 선명
+  const nU=Math.max(2, Math.min(6, Math.round(s*dpr)));
+  if(nU!==UIS || ui.width!==CW*nU || ui.height!==CH*nU){ UIS=nU; ui.width=CW*UIS; ui.height=CH*UIS; uctx.imageSmoothingEnabled=false; }
+  // DOM HUD(층/목표 문구)도 배율에 맞춰 — HP 패널(y15) 위에서 끝나게
+  const hud=document.getElementById("hud");
+  if(hud){ hud.style.fontSize=Math.max(10,Math.min(22,Math.round(6.2*s)))+"px"; hud.style.top=Math.round(2.5*s)+"px";
+    hud.style.left=hud.style.right=Math.round(4*s)+"px"; }
+  // 힌트바: 아래 여백이 있으면 캔버스 밖에 둔다
+  const hb=document.getElementById("hintbar"), spare=H-dispH;
   const wrap=document.getElementById("wrap");
-  if(isMobile && portrait){
-    wrap.style.alignItems="flex-start";
-    stageEl.style.marginTop=Math.max(6, Math.round((availH-dispH)/2))+"px";
-  } else {
-    wrap.style.alignItems="center";
-    stageEl.style.marginTop="0";
+  let outside=false;
+  if(hb){
+    hb.style.fontSize=Math.max(11,Math.min(13,Math.round(5*s)))+"px";
+    outside = !isMobile && spare>=26;
+    hb.classList.toggle("outside", outside); hb._outside=outside;
   }
+  // v18: 스테이지를 정수 px 위치에 직접 배치(가운데 정렬의 0.5px 흐림 방지)
+  wrap.style.alignItems="flex-start"; wrap.style.justifyContent="flex-start";
+  let top;
+  if(isMobile && portrait) top = SAFE.t+Math.max(6, Math.min(40,(availH-dispH)/2));        // 세로 모바일: 상단(노치 아래)
+  else if(outside) top = Math.max(2, (H-dispH-24)/2);                                       // 아래 24px은 힌트바 자리
+  else top = SAFE.t+(H-SAFE.t-SAFE.b-dispH)/2;
+  stageEl.style.marginTop=Math.max(0,Math.floor(top))+"px";
+  stageEl.style.marginLeft=Math.max(0,Math.floor(SAFE.l+(W-SAFE.l-SAFE.r-dispW)/2))+"px";
   if(typeof positionTouch==="function") positionTouch(portrait);
+}
+// v18: 노치/홈바 안전영역(px) — CSS env()를 측정용 요소의 padding으로 읽음
+let SAFE={t:0,r:0,b:0,l:0};
+const TOUCH_BAND=100;     // 가로 모바일: 좌우 버튼 밴드 최소 폭
+let dispScale=ZOOM;
+function readSafeArea(){
+  const el=document.getElementById("safeProbe"); if(!el) return;
+  const cs=getComputedStyle(el);
+  SAFE={t:parseFloat(cs.paddingTop)||0, r:parseFloat(cs.paddingRight)||0, b:parseFloat(cs.paddingBottom)||0, l:parseFloat(cs.paddingLeft)||0};
 }
 
 // ---- 시드 RNG (재현 가능한 절차 생성) ---------------------------------
@@ -803,7 +844,7 @@ function resumeAudio(){ if(actx && (actx.state==="suspended"||actx.state==="inte
 let sfxMuted = lsGet("fm_mute")==="1";   // 음소거(Shift+M / 모바일 🔊 버튼) — 효과음 볼륨 0
 function toggleMute(){
   sfxMuted=!sfxMuted; lsSet("fm_mute", sfxMuted?"1":"0");
-  const b=document.getElementById("btnMute"); if(b) b.textContent=sfxMuted?"🔇":"🔊";
+  if(typeof setMuteIcon==="function") setMuteIcon();   // v18: 픽셀 아이콘 교체
   if(typeof showPickup==="function" && started) showPickup((sfxMuted?"효과음 끔":"효과음 켬")+(isMobile?"":" (Shift+M)"));
 }
 function tone(freq, dur, type="square", vol=0.12, slideTo=null){
@@ -3734,23 +3775,9 @@ function drawPuzzleHud(){
     uctx.fillStyle="#ffe6a0"; uctx.fillRect(x,y,w*fill,2);
     uctx.strokeStyle="#d8c089"; uctx.lineWidth=1; uctx.strokeRect(x+0.5,y+0.5,w-1,h-1);
   }
-  // 퍼즐 안내 메시지(상단 중앙 토스트) — v3.7: 폭 초과 시 줄바꿈해 화면 이탈 방지
-  if(puzzleMsgT>0 && puzzleMsg){
-    const a=Math.min(1, puzzleMsgT/30);
-    uctx.globalAlpha=a;
-    uctx.font='9px "Galmuri9", monospace'; uctx.textAlign="center";
-    const lines=wrapLines(uctx, puzzleMsg, CW-36);
-    const lh=12;
-    let boxW=0; for(const ln of lines) boxW=Math.max(boxW, uctx.measureText(ln).width);
-    boxW=Math.min(CW-8, boxW+16);
-    const x=CW/2-boxW/2, y=34;
-    uctx.fillStyle="rgba(10,8,14,0.86)"; uctx.fillRect(x,y-11,boxW,lines.length*lh+4);
-    uctx.strokeStyle="#caa84a"; uctx.lineWidth=1; uctx.strokeRect(x+0.5,y-10.5,boxW-1,lines.length*lh+3);
-    uctx.fillStyle="#ffe6a0";
-    lines.forEach((ln,i)=>uctx.fillText(ln, CW/2, y+i*lh));
-    uctx.globalAlpha=1;
-  }
   uctx.textAlign="left"; uctx.restore();
+  // 퍼즐 안내 메시지 — v18: 공용 토스트(HUD 아래, 패널)
+  if(puzzleMsgT>0 && puzzleMsg) uiToast(puzzleMsg, Math.min(1, puzzleMsgT/30), "#ffe6a0");
 }
 function drawBossBar(){
   if(!boss||!boss.alive) return;
@@ -6330,6 +6357,7 @@ function uiPanel(c,x,y,w,h,o){
 const UI_HEART=[".oo...oo.","oRRo.oRRo","oRWRoRRRo","oRRRRRRRo",".oRRRRRo.","..oRRRo..","...oRo...","....o...."];
 const UI_COIN=["..oooo..",".oWYYYo.","oWYYYYyo","oYYddYyo","oYYdYYyo","oYYYYyyo",".oyyyyo.","..oooo.."];
 function drawHearts(){
+  _toastY=TOAST_Y;                 // v18: 토스트 쌓기 위치 초기화(매 프레임 HUD 시작점)
   uctx.save(); uctx.scale(UIS,UIS);
   const x=4, y=15, w=132, h=16;   // v16: 패널(차지 게이지 y33 위에서 끝남)
   const ratio=Math.max(0,player.hp)/MAX_HP;
@@ -6371,7 +6399,9 @@ function markFog(tx,ty){
 
 // ---- 카메라 ------------------------------------------------------------
 let shakeAmt=0;
-function shake(amt){ shakeAmt=Math.min(30, shakeAmt+amt); }
+// v18: 시스템 '동작 줄이기'가 켜져 있으면 화면 흔들림 없음
+const REDUCED_MOTION=(()=>{ try{ return !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches); }catch(e){ return false; } })();
+function shake(amt){ if(REDUCED_MOTION) return; shakeAmt=Math.min(30, shakeAmt+amt); }
 function updateCam(){
   cam.x = Math.round(player.x - CW/2);
   cam.y = Math.round(player.y - CH/2);
@@ -6931,49 +6961,59 @@ function renderDungeon(){
   if(floorSelect) drawFloorSelect();                   // v8: 층선택 UI
   drawFadeOverlay();
 }
-// 점수 표시 (체력바 아래)
+// 점수 표시 — v18: 코인 패널 바로 아래 작은 명판(우측)
 function drawScore(){
   uctx.save(); uctx.scale(UIS,UIS);
-  uctx.fillStyle="#cdc7b8"; uctx.font='8px "Galmuri7", monospace';
-  uctx.fillText("SCORE "+score, 8, 58);   // v9: 마나 게이지 추가로 한 단 더 내림
-  uctx.restore();
+  uctx.font='8px "Galmuri7", monospace'; uctx.textBaseline="top"; uctx.textAlign="left";
+  const lb="SCORE", vt=""+score, lw=Math.ceil(uctx.measureText(lb).width), vw=Math.ceil(uctx.measureText(vt).width);
+  const w=lw+vw+14, h=12, x=CW-4-w, y=33;
+  uiPanel(uctx,x,y,w,h,{noRivet:true});
+  uctx.fillStyle="#8a7a62"; uctx.fillText(lb, x+5, y+2);
+  uctx.fillStyle="#1a100a"; uctx.fillText(vt, x+lw+9, y+3);
+  uctx.fillStyle="#ffe6a0"; uctx.fillText(vt, x+lw+9, y+2);
+  uctx.textBaseline="alphabetic"; uctx.restore();
 }
-// v6: 강력한 공격 게이지 (체력바 바로 아래, PC/모바일 공통 표시)
+// v18: HUD 픽셀 아이콘(번개=강력한 공격, 물방울=마나)
+const UI_BOLT=["..ooo","..oyo",".oyo.","oyyyo",".oyo.","oyo..","ooo.."];
+const UI_DROP=["..o..",".obo.",".obo.","obbbo","obWbo","obbbo",".ooo."];
+const GAUGE_X=4, GAUGE_Y=33, GAUGE_W=104, GAUGE_H=21;   // HP 패널(y15~31) 바로 아래 나무 패널
+// 게이지 한 줄(아이콘 + 막대) — 패널 좌표 기준
+function _gaugeRow(rowY){ return {bx:GAUGE_X+13, by:GAUGE_Y+rowY, bw:GAUGE_W-18, bh:5}; }
+// v6: 강력한 공격 게이지 (체력 패널 아래 게이지 패널 1행) — v18: 패널+번개 아이콘
 function drawChargeBar(){
   uctx.save(); uctx.scale(UIS,UIS);
-  const x=8, y=33, w=92, h=5;
+  uiPanel(uctx,GAUGE_X,GAUGE_Y,GAUGE_W,GAUGE_H);
+  const {bx:x,by:y,bw:w,bh:h}=_gaugeRow(4);
   const ratio=Math.min(1,charge/CHARGE_MAX);
-  uctx.fillStyle="#000"; uctx.fillRect(x-1,y-1,w+2,h+2);
-  uctx.fillStyle="#241f12"; uctx.fillRect(x,y,w,h);
   const full=charge>=CHARGE_MAX;
   const blink=full?(Math.floor(Date.now()/150)%2):0;
-  uctx.fillStyle= full ? (blink?"#fff2c0":"#ffd24a") : "#c8861e";
-  uctx.fillRect(x+1,y+1,Math.round((w-2)*ratio),h-2);
-  uctx.fillStyle="#7a746a"; uctx.font='7px "Galmuri7",monospace';
-  uctx.fillText(full?"⚡ P!":"P", x+w+6, y+h);
+  uiBits(uctx,GAUGE_X+4,y-1,UI_BOLT,{o:"#2a1a06",y: full&&blink ? "#fff6c0" : (full?"#ffd24a":"#c8861e")});
+  uctx.fillStyle="#0c0708"; uctx.fillRect(x-1,y-1,w+2,h+2);
+  uctx.fillStyle="#241f12"; uctx.fillRect(x,y,w,h);
+  const fw=Math.round(w*ratio);
+  uctx.fillStyle= full ? (blink?"#fff2c0":"#ffd24a") : "#c8861e"; uctx.fillRect(x,y,fw,h);
+  uctx.fillStyle= full ? "#fffbe0" : "#ffcf6a"; uctx.fillRect(x,y,fw,1);
   uctx.restore();
 }
-// v9: 마나 게이지 (강력한 공격 게이지 바로 아래) — 마법 무기 전용, 하늘색. 5칸=발사 5번
+// v9: 마나 게이지 (게이지 패널 2행) — 마법 무기 전용, 하늘색. 5칸=발사 5번 — v18: 물방울 아이콘
 function drawManaBar(){
   uctx.save(); uctx.scale(UIS,UIS);
-  const x=8, y=41, w=92, h=5;
+  const {bx:x,by:y,bw:w,bh:h}=_gaugeRow(12);
   const ratio=Math.max(0,Math.min(1,mana/MANA_MAX));
-  uctx.fillStyle="#000"; uctx.fillRect(x-1,y-1,w+2,h+2);
-  uctx.fillStyle="#0e1a26"; uctx.fillRect(x,y,w,h);                 // 빈 게이지 바닥
   const low = mana < MANA_COST;                                    // 한 발도 못 쏘는 상태
   const blink = manaBlinkT>0 ? (Math.floor(Date.now()/90)%2) : 0;  // 부족 시도 깜빡임
+  uiBits(uctx,GAUGE_X+4,y-1,UI_DROP,{o:"#0a1620",b: blink?"#ff8080":(low?"#3a6a8a":"#3aa6e6"),W:"#d8f4ff"});
+  uctx.fillStyle="#0c0708"; uctx.fillRect(x-1,y-1,w+2,h+2);
+  uctx.fillStyle="#0e1a26"; uctx.fillRect(x,y,w,h);                 // 빈 게이지 바닥
   let c1 = low ? "#3a6a8a" : "#3aa6e6";                            // 하늘색 채움
   let c2 = low ? "#7fb4d6" : "#a8e4ff";                            // 윗 하이라이트
   if(blink){ c1="#ff8080"; c2="#ffd0d0"; }                         // 부족 경고(붉은 깜빡임)
-  const fw=Math.round((w-2)*ratio);
-  uctx.fillStyle=c1; uctx.fillRect(x+1,y+1,fw,h-2);
-  uctx.fillStyle=c2; uctx.fillRect(x+1,y+1,fw,1);                  // 윗면 광택
+  const fw=Math.round(w*ratio);
+  uctx.fillStyle=c1; uctx.fillRect(x,y,fw,h);
+  uctx.fillStyle=c2; uctx.fillRect(x,y,fw,1);                      // 윗면 광택
   // 1/5 눈금(5칸) — 연속 5발이면 바닥
   uctx.fillStyle="rgba(0,0,0,0.5)";
-  for(let i=1;i<5;i++){ const gx=x+1+Math.round((w-2)*i/5); uctx.fillRect(gx,y,1,h); }
-  // 라벨
-  uctx.fillStyle="#6f8298"; uctx.font='7px "Galmuri7",monospace';
-  uctx.fillText("MN", x+w+6, y+h);
+  for(let i=1;i<5;i++){ const gx=x+Math.round(w*i/5); uctx.fillRect(gx,y,1,h); }
   uctx.restore();
 }
 // 활성 포션 효과 배지 (좌상단 점수 아래)
@@ -6986,13 +7026,13 @@ function drawEffects(){
   if(player.webT>0)    fx.push(["거미줄","#e8e8f0",player.webT]);
   if(!fx.length) return;
   uctx.save(); uctx.scale(UIS,UIS);
-  let bx=8;
+  let bx=6;
   for(const[name,col,t]of fx){
     const w=26;
-    uctx.fillStyle="rgba(8,7,11,0.7)"; uctx.fillRect(bx,28,w,11);
-    uctx.fillStyle=col; uctx.fillRect(bx,28, w*Math.min(1,t/360), 2);  // 남은 시간 바
+    uctx.fillStyle="rgba(8,7,11,0.78)"; uctx.fillRect(bx,57,w,11);     // v18: 게이지 패널(~y54) 아래로
+    uctx.fillStyle=col; uctx.fillRect(bx,57, w*Math.min(1,t/360), 2);  // 남은 시간 바
     uctx.fillStyle=col; uctx.font='8px "Galmuri7", monospace';
-    uctx.fillText(name, bx+3, 37);
+    uctx.fillText(name, bx+3, 66);
     bx+=w+3;
   }
   uctx.restore();
@@ -7000,8 +7040,8 @@ function drawEffects(){
 // 관리자 태그
 function drawAdminTag(){
   uctx.save(); uctx.scale(UIS,UIS);
-  uctx.fillStyle="#7ee06a"; uctx.font='8px "Galmuri7", monospace'; uctx.textAlign="right";
-  uctx.fillText("⚙ ADMIN  [M]지도 [R]재생성 [F]하강 [Shift+F]보스즉사 [K]소탕 [Alt+F+L]1던전올클", CW-6, 24);
+  uctx.fillStyle="#7ee06a"; uctx.font='8px "Galmuri7", monospace'; uctx.textAlign="left";
+  uctx.fillText(isMobile ? "⚙ ADMIN" : "⚙ ADMIN  [M]지도 [R]재생성 [F]하강 [Shift+F]보스즉사 [K]소탕 [Alt+F+L]1던전올클", 6, CH-30);   // v18: 코인 패널과 겹치지 않게 좌하단
   uctx.textAlign="left"; uctx.restore();
 }
 // 현재 장착 무기 표시 (우하단) — UI 레이어
@@ -7015,26 +7055,28 @@ function drawWeaponHUD(){
   uctx.save(); uctx.translate(x+bw/2,y+8); drawWeaponIconU(W); uctx.restore();
   uctx.restore();
 }
-// 획득 메시지 (화면 하단 중앙) — UI 레이어
+// v18: 공용 토스트 — HUD 아래(y≈76) 중앙에 나무 패널로 표시. 같은 프레임의 토스트는 아래로 쌓임
+const TOAST_Y=76;
+let _toastY=TOAST_Y;      // drawHearts()에서 매 프레임 초기화
+function uiToast(text, alpha, color){
+  uctx.save(); uctx.scale(UIS,UIS);
+  uctx.globalAlpha=Math.max(0,Math.min(1,alpha));
+  uctx.font='9px "Galmuri9", monospace'; uctx.textAlign="center"; uctx.textBaseline="top";
+  // v3.7: 긴 기록(고서)도 화면을 벗어나지 않게 폭에 맞춰 줄바꿈
+  const lines=wrapLines(uctx, text, Math.min(CW-28, 300));
+  const lh=12;
+  let tw=0; for(const ln of lines) tw=Math.max(tw, Math.ceil(uctx.measureText(ln).width));
+  const w=Math.min(CW-8, tw+20), h=lines.length*lh+8, x=Math.round(CW/2-w/2), y=Math.round(_toastY);
+  uiPanel(uctx,x,y,w,h,{fill:"#1d1510"});
+  lines.forEach((ln,i)=>{ uctx.fillStyle="#1a100a"; uctx.fillText(ln, CW/2, y+5+i*lh);
+                          uctx.fillStyle=color||"#ffe06a"; uctx.fillText(ln, CW/2, y+4+i*lh); });
+  _toastY=y+h+3;
+  uctx.restore();
+}
+// 획득 메시지 — v18: 하단 → HUD 아래 토스트(무기칸·보스바와 겹치지 않음)
 function drawPickupMsg(){
   if(pickupMsgT<=0 || !pickupMsg) return;
-  uctx.save(); uctx.scale(UIS,UIS);
-  const alpha=Math.min(1, pickupMsgT/30);
-  uctx.font='10px "Galmuri9", monospace'; uctx.textAlign="center";
-  // v3.7: 긴 기록(고서)도 화면을 벗어나지 않게 폭에 맞춰 줄바꿈 → 하단에서 위로 쌓아 표시
-  const lines=wrapLines(uctx, pickupMsg, CW-32);
-  const lh=14;
-  const bottomBase=CH-22;                       // 맨 아랫줄 베이스라인
-  const topBase=bottomBase-(lines.length-1)*lh;  // 첫 줄 베이스라인
-  // 가독성 배경 박스
-  let boxW=0; for(const ln of lines) boxW=Math.max(boxW, uctx.measureText(ln).width);
-  boxW=Math.min(CW-8, boxW+18);
-  uctx.globalAlpha=alpha;
-  uiPanel(uctx,(CW-boxW)/2-4, topBase-14, boxW+8, lines.length*lh+10, {noRivet:true});   // v16: 나무 테 패널
-  uctx.fillStyle="#ffe06a";
-  lines.forEach((ln,i)=>uctx.fillText(ln, CW/2, topBase+i*lh));
-  uctx.textAlign="left"; uctx.globalAlpha=1;
-  uctx.restore();
+  uiToast(pickupMsg, Math.min(1, pickupMsgT/30), "#ffe06a");
 }
 
 /* =========================================================================
@@ -7091,6 +7133,19 @@ function setHud(){
   }
 }
 
+// v18: 힌트바 표시 — 캔버스 밖이면 항상, 안쪽이면 게임 화면을 가릴 일이 없을 때만
+let _hintEl=null;
+function updateHintbar(){
+  const hb=_hintEl||(_hintEl=document.getElementById("hintbar"));
+  if(!hb || isMobile) return;
+  let show=started && !gameOver && !gameWon;
+  if(show && !hb._outside){
+    show = scene==="dungeon" && !(boss&&boss.alive) && !showInv && !shop && !showMap && !paused && !floorSelect &&
+           !npcDialog && !bossCS && !deepPanel && !deepQTE && !deepEnding && !deep31Prompt && !colosseumCS && !transition;
+  }
+  if(hb.classList.contains("off")===show) hb.classList.toggle("off", !show);
+}
+
 // ---- 공통 충돌 이동 (4모서리 체크) ----
 function collideMove(nx,ny,solidFn){
   const r=player.r;
@@ -7114,51 +7169,45 @@ function drawCoins(){
 // 보유 영혼 수(HUD) — 던전에서 코인 아래
 function drawSoulCount(){
   if(!player) return;
-  // 열쇠 보유 표시(영혼 유무와 무관)
-  if(player.keys>0){
-    uctx.save(); uctx.scale(UIS,UIS); uctx.font='9px "Galmuri9",monospace'; uctx.textAlign="right";
-    const kt=""+player.keys; uctx.fillStyle="#ffe06a"; uctx.fillText(kt, CW-8, 56);
-    const ktw=uctx.measureText(kt).width; const kx=CW-8-ktw-7, ky=52;
-    uctx.fillStyle="#caa84a"; uctx.beginPath(); uctx.arc(kx-1,ky,2.5,0,6.28); uctx.fill();
-    uctx.fillRect(kx,ky-1,4,2); uctx.fillRect(kx+3,ky+1,1,1);
-    uctx.textAlign="left"; uctx.restore();
+  // v18: 열쇠·영혼·세이브포인트를 점수 명판 아래 한 줄 명판(우측, y47)에 아이콘+숫자로
+  const items=[];
+  if(player.keys>0) items.push([UI_KEY,{o:"#3a2a08",k:"#caa84a",K:"#ffe06a"},""+player.keys,"#ffe06a"]);
+  const total=player.souls?totalSoulCount():0;
+  if(total>0) items.push([UI_SOUL,{o:"#1e1238",s:"#9a7cff",S:"#cbb8ff"},""+total,"#cbb8ff"]);
+  const sp=player.savePoints||0;
+  if(sp>0) items.push([UI_CROSS,{o:"#18222c",c:"#cfe8ff"},"x"+sp,"#cfe8ff"]);
+  if(!items.length) return;
+  uctx.save(); uctx.scale(UIS,UIS);
+  uctx.font='8px "Galmuri7", monospace'; uctx.textBaseline="top"; uctx.textAlign="left";
+  let w=6; for(const it of items) w+=7+Math.ceil(uctx.measureText(it[2]).width)+6;
+  const h=12, y=47; let x=CW-4-w;
+  uiPanel(uctx,x,y,w,h,{noRivet:true});
+  x+=5;
+  for(const [bits,pal,txt,col] of items){
+    uiBits(uctx,x,y+3,bits,pal); x+=7;
+    uctx.fillStyle="#1a100a"; uctx.fillText(txt,x,y+3); uctx.fillStyle=col; uctx.fillText(txt,x,y+2);
+    x+=Math.ceil(uctx.measureText(txt).width)+6;
   }
-  if(!player.souls) return;
-  const total=totalSoulCount();
-  if(total<=0) return;
-  uctx.save(); uctx.scale(UIS,UIS);
-  uctx.font='9px "Galmuri9", monospace'; uctx.textAlign="right";
-  const txt=""+total;
-  uctx.fillStyle="#cbb8ff"; uctx.fillText(txt, CW-8, 42);
-  const tw=uctx.measureText(txt).width;
-  const cx=CW-8-tw-7, cy=38;
-  uctx.fillStyle="#9a7cff"; uctx.fillRect(cx-2,cy-3,4,5); uctx.fillRect(cx-3,cy,6,2);
-  uctx.fillStyle="#cbb8ff"; uctx.fillRect(cx-1,cy-4,2,2);
-  uctx.textAlign="left"; uctx.restore();
-  drawSavePointHud();
+  uctx.textBaseline="alphabetic"; uctx.restore();
 }
-// v3.8: 세이브 포인트 보유 표시(우측 열, 갑옷 배지 아래)
-function drawSavePointHud(){
-  const n=player&&player.savePoints||0; if(n<=0) return;
-  uctx.save(); uctx.scale(UIS,UIS);
-  uctx.font='9px "Galmuri9",monospace'; uctx.textAlign="right";
-  const txt="x"+n; uctx.fillStyle="#cfe8ff"; uctx.fillText(txt, CW-8, 90);
-  const tw=uctx.measureText(txt).width; const ax=CW-8-tw-8, ay=86;
-  // 작은 십자가(세이브 포인트) 아이콘
-  uctx.fillStyle="#cfe8ff"; uctx.fillRect(ax-1,ay-4,2,8); uctx.fillRect(ax-3,ay-2,6,2);
-  uctx.textAlign="left"; uctx.restore();
-}
+const UI_KEY=["oKKo..","Ko.K..","oKKkkk","....ko","....k."];
+const UI_SOUL=[".oSo.","oSSso","osSso","ossso",".o.o."];
+const UI_CROSS=["..c..",".ccc.","..c..","..c..","..c.."];
 function drawArmorBadge(){
   if(!player.armorTier) return;
   const A=ARMORS[player.armorTier-1];
   uctx.save(); uctx.scale(UIS,UIS);
-  // v3.4: 열쇠(y56)/영혼(y42)과 겹치지 않게 한 줄 더 아래(y68)로
-  uctx.fillStyle="rgba(8,7,11,0.7)"; uctx.fillRect(CW-84,66,76,11);
-  uctx.fillStyle=A.color; uctx.fillRect(CW-81,68,7,7);
-  uctx.fillStyle="#9aa0ad"; uctx.fillRect(CW-81,68,7,2);
-  uctx.fillStyle="#cdc7b8"; uctx.font='8px "Galmuri7",monospace';
-  uctx.fillText(A.name+" -"+Math.round(A.red*100)+"%", CW-71, 75);
-  uctx.restore();
+  // v18: 우측 명판 열(코인 y15 / 점수 y33 / 열쇠·영혼 y47) 아래 y61, 같은 나무 명판 스타일
+  uctx.font='8px "Galmuri7",monospace'; uctx.textBaseline="top";
+  const txt=A.name+" -"+Math.round(A.red*100)+"%", tw=Math.ceil(uctx.measureText(txt).width);
+  const w=tw+20, h=12, x=CW-4-w, y=(scene==="dungeon"?61:33);   // 마을/집은 점수·열쇠 명판이 없으니 코인 바로 아래
+  uiPanel(uctx,x,y,w,h,{noRivet:true});
+  uctx.fillStyle="#120b08"; uctx.fillRect(x+4,y+2,8,8);
+  uctx.fillStyle=A.color; uctx.fillRect(x+5,y+3,6,6);
+  uctx.fillStyle="#d8dde6"; uctx.fillRect(x+5,y+3,6,1);
+  uctx.fillStyle="#1a100a"; uctx.fillText(txt, x+15, y+3);
+  uctx.fillStyle="#cdc7b8"; uctx.fillText(txt, x+15, y+2);
+  uctx.textBaseline="alphabetic"; uctx.restore();
 }
 
 /* ============================ 마을 (v6 대확장) ============================ */
@@ -8955,7 +9004,7 @@ function buyShop(){
 function drawShop(){
   uctx.save(); uctx.scale(UIS,UIS);
   uctx.fillStyle="rgba(6,4,8,0.84)"; uctx.fillRect(0,0,CW,CH);
-  const o=shop.options, pX=44, pW=CW-88, rowH=26, startY=50;
+  const o=shop.options, pX=(CW<320?26:44), pW=CW-2*pX, rowH=26, startY=50;   // v18: 좁은 세로 화면은 패널을 넓게(탭 판정 shopRowRects도 같은 값 사용)
   // v16: 나무 테 패널 + 제목 명판 + 코인 표시
   uiPanel(uctx, pX-12, 12, pW+24, Math.min(CH-18, startY+o.length*rowH+8), {fill:"#1d1510"});
   uctx.font='12px "Galmuri11", monospace';
@@ -8978,16 +9027,20 @@ function drawShop(){
     uctx.fillStyle= sel? "#3a2a16" : "#16100d"; uctx.fillRect(pX+2,ry+2,pW-4,rowH-8);
     if(sel){ uctx.fillStyle="#ffd24a"; const ay=ry+8; uctx.fillRect(pX-7,ay,1,7); uctx.fillRect(pX-6,ay+1,1,5); uctx.fillRect(pX-5,ay+2,1,3); uctx.fillRect(pX-4,ay+3,1,1); }
     uctx.fillStyle= it.disabled? "#8a847a" : "#ffe6a0"; uctx.font='10px "Galmuri9",monospace';
-    uctx.fillText(it.label, pX+10, ry+11);
+    uctx.fillText(it.label, pX+10, ry+10);
     uctx.fillStyle="#9a948a"; uctx.font='8px "Galmuri7",monospace';
-    uctx.fillText(it.sub||"", pX+10, ry+20);
+    uctx.fillText(it.sub||"", pX+10, ry+18);                          // v18: 행 아래 테두리와 2px 띄움
     uctx.textAlign="right"; uctx.font='10px "Galmuri9",monospace';
     if(it.disabled){ uctx.fillStyle="#6a9a6a"; uctx.fillText(it.ownedTag?"보유 중":"—", pX+pW-10, ry+14); }
     else { uctx.fillStyle= coins>=it.price? "#ffd24a":"#c0606a"; uctx.fillText(it.price+" 코인", pX+pW-10, ry+14); }
     uctx.textAlign="left";
   }
-  uctx.fillStyle="#7a746a"; uctx.font='8px "Galmuri7",monospace'; uctx.textAlign="center";
-  uctx.fillText("↑ ↓ 선택  ·  Enter 구매  ·  E / ESC 닫기", CW/2, startY+o.length*rowH+14);
+  // v18: 안내 문구 — 모바일은 탭 안내, 패널 폭을 넘으면 글자 크기를 줄여 잘리지 않게
+  const foot = isMobile ? "탭: 선택  ·  한 번 더 탭: 구매  ·  가방 버튼: 닫기" : "↑ ↓ 선택  ·  Enter 구매  ·  E / ESC 닫기";
+  let fpx=8; uctx.font=fpx+'px "Galmuri7",monospace';
+  while(fpx>5 && uctx.measureText(foot).width>pW+12){ fpx--; uctx.font=fpx+'px "Galmuri7",monospace'; }
+  uctx.fillStyle="#7a746a"; uctx.textAlign="center";
+  uctx.fillText(foot, CW/2, startY+o.length*rowH+12);
   uctx.textAlign="left"; uctx.restore();
 }
 
@@ -9062,10 +9115,12 @@ function prerenderHouse(){
   g.fillStyle="#2a2018"; g.fillRect(wx,4,TILE*2+8,TILE+10);              // 바깥 틀
   g.fillStyle="#1a1410"; g.fillRect(wx+1,5,TILE*2+6,TILE+8);             // 안쪽 음영(유리 자리)
   // 벽난로(좌벽)
-  g.fillStyle="#5a5560"; g.fillRect(TILE,3*TILE,2*TILE,3*TILE);
-  g.fillStyle="#43404a"; g.fillRect(TILE,3*TILE,2*TILE,4);
-  g.fillStyle="#2a2630"; g.fillRect(TILE+4,4*TILE,2*TILE-8,2*TILE-6);
-  g.fillStyle="#1a1620"; g.fillRect(TILE+4,6*TILE-8,2*TILE-8,6);
+  // v18: 침대(2열~)와 겹치지 않게 1열(좌벽 옆) 안에만 — 불구멍은 침대 아래 5행
+  g.fillStyle="#5a5560"; g.fillRect(TILE,3*TILE,TILE-2,3*TILE);
+  g.fillStyle="#43404a"; g.fillRect(TILE,3*TILE,TILE-2,4);
+  g.fillStyle="#6a6570"; g.fillRect(TILE,5*TILE-2,TILE-2,2);
+  g.fillStyle="#2a2630"; g.fillRect(TILE+2,5*TILE,TILE-6,TILE-3);
+  g.fillStyle="#1a1620"; g.fillRect(TILE+2,6*TILE-5,TILE-6,2);
   // 책장(우벽)
   g.fillStyle="#3a2616"; g.fillRect((HOUSE_W-3)*TILE,3*TILE,2*TILE-2,2*TILE);
   const bc=["#7a3a3a","#3a5a7a","#6a5a2a","#5a3a6a"];
@@ -9302,14 +9357,16 @@ function drawHouseWindow(){
   ctx.fillStyle="rgba(255,255,255,0.12)"; ctx.fillRect(gx+2,gy+2,gw/2-3,2);
 }
 function drawFireplace(){
-  const x=houseOX+TILE+4, y=houseOY+4*TILE+2, t=townTime*0.2;
+  // v18: 불은 1열 불구멍(침대 아래 5행) 안에만 — 예전엔 침대 베개 위에 주황 사각형이 그려졌음
+  const x=houseOX+TILE+2, y=houseOY+5*TILE+2, t=townTime*0.2, fw=TILE-6;
   ctx.save(); ctx.globalCompositeOperation="lighter";
-  const gg=ctx.createRadialGradient(x+10,y+8,2,x+10,y+8,44);
-  gg.addColorStop(0,"rgba(255,150,55,0.4)"); gg.addColorStop(1,"rgba(255,150,55,0)");
-  ctx.fillStyle=gg; ctx.fillRect(x-32,y-32,90,90); ctx.restore();
-  ctx.fillStyle="#ff7a1e"; ctx.fillRect(x, y+(Math.sin(t)>0?0:1), 2*TILE-12, 12);
-  ctx.fillStyle="#ffd24a"; ctx.fillRect(x+4, y+3+Math.round(Math.sin(t*1.3)), 2*TILE-20, 6);
-  ctx.fillStyle="#fff2c0"; ctx.fillRect(x+8, y+5, 6, 3);
+  const gg=ctx.createRadialGradient(x+fw/2,y+6,2,x+fw/2,y+6,36);
+  gg.addColorStop(0,"rgba(255,150,55,0.32)"); gg.addColorStop(1,"rgba(255,150,55,0)");
+  ctx.fillStyle=gg; ctx.fillRect(x-32,y-30,fw+64,66); ctx.restore();
+  const fl=(Math.sin(t)>0?0:1);
+  ctx.fillStyle="#ff7a1e"; ctx.fillRect(x, y+3+fl, fw, 8-fl);
+  ctx.fillStyle="#ffd24a"; ctx.fillRect(x+2, y+5+Math.round(Math.sin(t*1.3)), fw-4, 4);
+  ctx.fillStyle="#fff2c0"; ctx.fillRect(x+4, y+7, 2, 2);
 }
 function drawSleepingPlayer(){
   const bx=houseOX+bed.x*TILE, by=houseOY+bed.y*TILE, w=bed.w*TILE, h=bed.h*TILE;
@@ -10107,50 +10164,118 @@ const elBtnAdmin=document.getElementById("btnAdmin");   // v3.9: 모바일 관�
 const elAdminCmds=document.getElementById("adminCmds"); // v3.10: 관리자 커맨드 버튼들
 const elBtnCharge=document.getElementById("btnCharge"), elChargeRing=document.getElementById("chargeRing");
 
-// 화면 방향/모드에 따라 컨트롤 배치
+// ===== v18: 픽셀 아트 터치 버튼(나무 테 + 금 리벳 + 픽셀 아이콘) — 작은 캔버스로 그려 data URL로 입힘 =====
+const TB_PAL={w:"#ffe6a0",y:"#c8901a",r:"#e8344e",p:"#d8bf86",d:"#6a4a22",b:"#c8884a",B:"#7a4e24",g:"#ffd24a",o:"#120b08"};
+const TB_ICON={
+  menu:["wwwwwwwwww","yyyyyyyyyy","..........","wwwwwwwwww","yyyyyyyyyy","..........","wwwwwwwwww","yyyyyyyyyy"],
+  home:["....ww....","...wwww...","..wwwwww..",".wwwwwwww.","wwwwwwwwww",".wwwwwwww.",".www..www.",".www..www.",".yyy..yyy."],
+  soundOn:["....w..w..","...ww...w.","wwwww.w.w.","wwwww.w..w","wwwww.w..w","wwwww.w.w.","...ww...w.","....w..w.."],
+  soundOff:["....w.....","...ww.....","wwwww.r..r","wwwww..rr.","wwwww..rr.","wwwww.r..r","...ww.....","....w....."],
+  lock:["..wwww..",".ww..ww.",".w....w.",".w....w.","wwwwwwww","www..www","www..www","wwwwwwww","yyyyyyyy"],
+  map:["yppppppppy","pdpppprprp","ppdpppprpp","pppdpprprp","ppppddpppp","pppppppppp","yppppppppy"],
+  bag:["...BBBB...","..B....B..","..B....B..",".bbbbbbbb.","bbbbbbbbbb","bBBBggBBBb","bbbbggbbbb","bbbbbbbbbb",".BBBBBBBB."],
+  bolt:["....yyy.","...yyy..","..yyy...",".yyyyyy.","...yyy..","..yyy...",".yy.....","y......."]
+};
+function _tbCanvas(n,fn){ const c=document.createElement("canvas"); c.width=n; c.height=n; const g=c.getContext("2d"); g.imageSmoothingEnabled=false; fn(g); return "url("+c.toDataURL()+")"; }
+function _tbIcon(g,n,rows,pal){ uiBits(g, Math.floor((n-rows[0].length)/2), Math.floor((n-rows.length)/2), rows, pal||TB_PAL); }
+function _tbSquare(icon){ return _tbCanvas(16,g=>{ uiPanel(g,0,0,16,16,{alpha:1}); _tbIcon(g,16,TB_ICON[icon]); }); }
+// 픽셀 원형 나무 테(지름 n) — fill: 안쪽 색(반투명 가능)
+function _tbRound(g,n,fill){
+  const r=n/2;
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){
+    const dx=x+0.5-r, dy=y+0.5-r, d=Math.hypot(dx,dy); let col=null;
+    if(d<=r-0.15){
+      if(d>r-1.15) col="#120b08";
+      else if(d>r-3.15) col= dy<-r*0.4 ? "#9a6a3e" : (dy>r*0.4 ? "#3d2416" : "#6b4127");
+      else if(d>r-4.15) col="#120b08";
+      else col=fill||"#1c1411";
+    }
+    if(col){ g.fillStyle=col; g.fillRect(x,y,1,1); }
+  }
+  const rr=r-2.1;
+  for(const a of [0.785,2.356,3.927,5.498]){
+    const x=Math.round(r+Math.cos(a)*rr)-1, y=Math.round(r+Math.sin(a)*rr)-1;
+    g.fillStyle="#e2b553"; g.fillRect(x,y,2,2); g.fillStyle="#fff0b8"; g.fillRect(x,y,1,1);
+  }
+}
+let TB_ART=null;
+function makeTouchArt(){
+  if(TB_ART) return TB_ART;
+  TB_ART={};
+  for(const k of ["menu","home","soundOn","soundOff","lock","map","bag"]) TB_ART[k]=_tbSquare(k);
+  // 공격: 지름 24 원 + 대각선 검
+  TB_ART.attack=_tbCanvas(24,g=>{ _tbRound(g,24,"#3a1712");
+    for(let i=0;i<7;i++){ g.fillStyle="#f4f0e4"; g.fillRect(11+i,12-i,1,1); g.fillStyle="#9aa0ad"; g.fillRect(11+i,13-i,1,1); }
+    g.fillStyle="#ffd24a"; for(const [x,y] of [[8,11],[9,12],[10,13],[11,14],[12,15]]) g.fillRect(x,y,1,1);
+    g.fillStyle="#7a4e24"; g.fillRect(9,14,1,1); g.fillRect(8,15,1,1);
+    g.fillStyle="#ffd24a"; g.fillRect(7,16,1,1); });
+  // 차지: 지름 16 원 + 번개
+  TB_ART.charge=_tbCanvas(16,g=>{ _tbRound(g,16,"#2a1a0c"); _tbIcon(g,16,TB_ICON.bolt,{y:"#ffd24a"}); });
+  // 조이스틱 받침(반투명) + 손잡이(금빛 원)
+  TB_ART.joy=_tbCanvas(32,g=>{ _tbRound(g,32,"rgba(28,20,17,0.55)");
+    g.fillStyle="rgba(226,181,83,0.35)"; for(const [x,y] of [[15,7],[16,7],[15,24],[16,24],[7,15],[7,16],[24,15],[24,16]]) g.fillRect(x,y,1,1); });
+  TB_ART.knob=_tbCanvas(12,g=>{ const r=6;
+    for(let y=0;y<12;y++)for(let x=0;x<12;x++){ const dx=x+0.5-r, dy=y+0.5-r, d=Math.hypot(dx,dy); if(d>r-0.15) continue;
+      g.fillStyle= d>r-1.15 ? "#120b08" : (d>r-2.15 && dy>0 ? "#9a6a3e" : "#e2b553"); g.fillRect(x,y,1,1); }
+    g.fillStyle="#fff0b8"; g.fillRect(3,3,2,1); g.fillRect(3,4,1,1); });
+  return TB_ART;
+}
+function _tbSet(el,art){ if(el && el._art!==art){ el.style.backgroundImage=art; el._art=art; } }
+function setMuteIcon(){ const A=makeTouchArt(); _tbSet(elBtnMute, sfxMuted?A.soundOff:A.soundOn); }
+function applyTouchArt(){
+  const A=makeTouchArt();
+  _tbSet(elBtnMenu,A.menu); _tbSet(elBtnHome,A.home); _tbSet(elBtnAdmin,A.lock); _tbSet(elBtnMap,A.map);
+  _tbSet(elBtnInv,A.bag); _tbSet(elBtnA,A.attack); _tbSet(elJoy,A.joy); _tbSet(elKnob,A.knob);
+  const ci=elBtnCharge&&elBtnCharge.querySelector(".cInner"); _tbSet(ci,A.charge);
+  setMuteIcon();
+}
+applyTouchArt();
+
+// 화면 방향/모드에 따라 컨트롤 배치 — v18: HUD를 가리지 않도록 캔버스 바깥 여백(밴드)에 배치
+function _place(el,x,y,w,h){ if(!el) return; const st=el.style;
+  st.left=Math.round(x)+"px"; st.top=Math.round(y)+"px"; st.right="auto"; st.bottom="auto";
+  if(w){ st.width=Math.round(w)+"px"; st.height=Math.round(h||w)+"px"; } }
 function positionTouch(portrait){
   if(!isMobile){ return; }
   const W=window.innerWidth, H=window.innerHeight;
-  // 조이스틱: 항상 오른쪽 아래
-  const joySize=Math.min(140, Math.round(Math.min(W,H)*0.34));
-  elJoy.style.width=joySize+"px"; elJoy.style.height=joySize+"px";
-  let joyBottom, ctrlBottom;
+  const sr=stageEl.getBoundingClientRect();
+  const L=SAFE.l, R=W-SAFE.r, T=SAFE.t, B=H-SAFE.b;
   if(portrait){
-    // 세로: 던전 아래 빈 영역에 컨트롤
-    const stageBottom = stageEl.getBoundingClientRect().bottom;
-    const bandMid = stageBottom + (H-stageBottom)/2;
-    joyBottom = H - bandMid - joySize/2;
-    ctrlBottom = joyBottom;
+    // ① 캔버스 바로 아래: 작은 버튼 한 줄(메뉴·홈·지도·음소거·관리자)
+    const bs = (R-L) >= 360 ? 48 : 40;
+    const rowY = sr.bottom + 10;
+    const row=[elBtnMenu, elBtnHome, elBtnMap, elBtnMute, elBtnAdmin];
+    const m=16, step=((R-L)-2*m-bs)/(row.length-1);
+    row.forEach((el,i)=>_place(el, L+m+i*step, rowY, bs));
+    // ② 그 아래 영역: 왼쪽 공격·차지·가방 / 오른쪽 조이스틱
+    const top=rowY+bs+12, bandH=Math.max(160, B-top-12);
+    const joySize=Math.max(96, Math.min(160, Math.floor(Math.min(bandH, (R-L)*0.45)/32)*32 || 128));
+    const midY = top + bandH/2;
+    _place(elJoy, R-18-joySize, midY-joySize/2, joySize);
+    const atk=72, chg=64, inv=bs;
+    _place(elBtnA, L+18, midY-atk/2+24, atk);
+    _place(elBtnCharge, L+18+atk+12, midY-chg-6, chg);
+    _place(elBtnInv, L+18+atk+12+(chg-inv)/2, midY+12, inv);
   } else {
-    joyBottom = 20; ctrlBottom = 20;
+    // 가로: 캔버스 좌우 밴드. 왼쪽 위 메뉴/음소거/홈/관리자, 왼쪽 아래 공격·차지 / 오른쪽 위 지도·가방, 오른쪽 아래 조이스틱
+    const lw=Math.max(0, sr.left-L), rw=Math.max(0, R-sr.right);
+    const bs = Math.min(lw,rw) >= 112 ? 48 : 40, gap=6;
+    const cols = Math.min(lw,rw) >= 2*bs+gap+12 ? 2 : 1;
+    const colX=(bandL,bandW,i,n)=> bandL + (bandW - (n*bs+(n-1)*gap))/2 + i*(bs+gap);
+    const left=[elBtnMenu, elBtnMute, elBtnHome, elBtnAdmin];
+    left.forEach((el,i)=>{ const c=i%cols, r=Math.floor(i/cols); _place(el, colX(L,lw,c,cols), T+8+r*(bs+gap), bs); });
+    const right=[elBtnMap, elBtnInv];
+    right.forEach((el,i)=>{ const c=i%cols, r=Math.floor(i/cols); _place(el, colX(sr.right,rw,c,cols), T+8+r*(bs+gap), bs); });
+    const atk=Math.min(72, Math.max(56, lw-16)), chg=Math.min(64, atk-8);
+    _place(elBtnA, L+Math.max(6,(lw-atk)/2), B-12-atk, atk);
+    _place(elBtnCharge, L+Math.max(6,(lw-chg)/2), B-12-atk-10-chg, chg);
+    const joySize=Math.max(88, Math.min(128, rw-12));
+    _place(elJoy, R-Math.max(6,(rw+joySize)/2), B-12-joySize, joySize);
   }
-  elJoy.style.right = "18px";
-  elJoy.style.bottom = Math.max(12,joyBottom)+"px";
-  elJoy.style.left="auto"; elJoy.style.top="auto";
-  // 액션 버튼: 왼쪽 아래 (공격)
-  const cb=Math.max(12,ctrlBottom+14);
-  elBtnA.style.left="20px"; elBtnA.style.bottom=cb+"px";
-  elBtnA.style.right="auto"; elBtnA.style.top="auto";
-  // 인벤토리: 공격 오른쪽
-  elBtnInv.style.left="98px"; elBtnInv.style.bottom=Math.max(12,ctrlBottom+8)+"px";
-  elBtnInv.style.right="auto"; elBtnInv.style.top="auto";
-  // 강력한 공격(차지): 인벤토리 바로 위, 같은 크기
-  if(elBtnCharge){
-    elBtnCharge.style.left="98px"; elBtnCharge.style.bottom=(Math.max(12,ctrlBottom+8)+64)+"px";
-    elBtnCharge.style.right="auto"; elBtnCharge.style.top="auto";
-  }
-  // 메뉴(처음으로) 버튼: 좌상단 (전 씬에서 표시)
-  elBtnMenu.style.left="12px"; elBtnMenu.style.top="56px";
-  elBtnMenu.style.right="auto"; elBtnMenu.style.bottom="auto";
-  // v8: 홈(마을 복귀) 버튼 — 메뉴 버튼 바로 오른쪽
-  elBtnHome.style.left="76px"; elBtnHome.style.top="56px";
-  elBtnHome.style.right="auto"; elBtnHome.style.bottom="auto";
-  // 음소거 버튼 — 홈 버튼 바로 오른쪽
-  if(elBtnMute){ elBtnMute.style.left="140px"; elBtnMute.style.top="56px"; elBtnMute.style.right="auto"; elBtnMute.style.bottom="auto"; }
-  // v3.20: 지도 버튼 — 우측 상단
-  if(elBtnMap){ elBtnMap.style.right="12px"; elBtnMap.style.top="56px"; elBtnMap.style.left="auto"; elBtnMap.style.bottom="auto"; }
-  // v3.20: 관리자 버튼 — 지도 버튼 바로 왼쪽(우측 상단)
-  if(elBtnAdmin){ elBtnAdmin.style.right="76px"; elBtnAdmin.style.top="56px"; elBtnAdmin.style.left="auto"; elBtnAdmin.style.bottom="auto"; }
+  const jk=Math.round(parseFloat(elJoy.style.width)*0.375);
+  elKnob.style.width=elKnob.style.height=jk+"px"; elKnob.style.margin=(-jk/2)+"px 0 0 "+(-jk/2)+"px";
+  if(elAdminCmds){ elAdminCmds.style.top=Math.round(portrait? Math.max(T+8, sr.top+8) : T+8+2*(40+6)+8)+"px";
+    elAdminCmds.style.right=Math.round(portrait? 12 : SAFE.r+Math.max(6,(R-sr.right-96)/2))+"px"; }
 }
 // v17: 매 프레임 호출되므로 값이 바뀔 때만 style에 기록(불필요한 스타일 재계산 방지)
 function setDisp(el,v){ if(el && el.style.display!==v) el.style.display=v; }
@@ -10175,9 +10300,9 @@ function refreshTouchVisibility(){
   setDisp(elJoy, overlayOpen ? "none" : "block");
   if(elBtnCharge){
     setDisp(elBtnCharge, (inDungeon && !overlayOpen) ? "flex" : "none");
-    // 게이지 링 갱신 (둘레 2πr ≈ 157)
+    // 게이지 링 갱신 (둘레 2πr ≈ 176, r=28)
     const ratio=Math.min(1,charge/CHARGE_MAX);
-    const off=(157*(1-ratio)).toFixed(1);
+    const off=(176*(1-ratio)).toFixed(1);
     if(elChargeRing._off!==off){ elChargeRing.style.strokeDashoffset = off; elChargeRing._off=off; }
     const ready=charge>=CHARGE_MAX;
     if(elBtnCharge.classList.contains("ready")!==ready) elBtnCharge.classList.toggle("ready", ready);
@@ -10227,7 +10352,7 @@ bindHold(elBtnA, ()=>{ if(paused){ paused=false; return; } if(scene==="dungeon")
 elBtnA.addEventListener("touchstart",()=>{atkHold=true;});
 elBtnA.addEventListener("touchend",()=>{atkHold=false;});
 elBtnA.addEventListener("touchcancel",()=>{atkHold=false;});   // 시스템 제스처 등으로 터치 취소 시 연사 고착 방지
-if(elBtnMute){ elBtnMute.textContent=sfxMuted?"🔇":"🔊"; bindHold(elBtnMute, ()=>{ toggleMute(); }); }
+if(elBtnMute){ setMuteIcon(); bindHold(elBtnMute, ()=>{ toggleMute(); }); }
 bindHold(elBtnInv, ()=>{ openInventory(); });
 bindHold(elBtnCharge, ()=>{ chargeAttack(); });
 let _menuConfirmT=0;
@@ -10463,6 +10588,8 @@ function _loopErr(err){
 function loop(){
   requestAnimationFrame(loop);        // 먼저 예약 → 한 번의 예외로 게임이 멈추지 않음
   try{
+  if(document.body.classList.contains("ingame")!==started) document.body.classList.toggle("ingame", started);   // v18: 시작 전 HUD/터치 숨김
+  updateHintbar();
   if(started){
     advanceClock();                   // 시간 진행 (전 씬 공용)
     if(isMobile) refreshTouchVisibility();
