@@ -7109,7 +7109,7 @@ function render(){
     let panelOpen=false;
     for(const p of _panelEls){ if(!p.classList.contains("hidden")){ panelOpen=true; break; } }
     // v3.25: 마을/집에서는 상단 오브젝티브 텍스트를 숨긴다(HP바 등과 겹침 방지). 던전에서만 표시.
-    const hideHud = showInv || showMap || (typeof shop!=="undefined"&&shop) || panelOpen || scene==="town" || scene==="house";
+    const hideHud = showInv || showMap || (typeof shop!=="undefined"&&shop) || panelOpen || floorSelect || scene==="town" || scene==="house";
     const disp = hideHud ? "none" : "flex";
     if(hudEl.style.display!==disp) hudEl.style.display = disp;
   }
