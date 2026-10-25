@@ -4,6 +4,8 @@
 
 🎮 **바로 플레이 → `https://kraewon7422.github.io/fallen-memoir/`**
 
+🕰️ **클래식(리디자인 이전) 버전 → `https://kraewon7422.github.io/fallen-memoir/classic/`** (저장 데이터는 새 버전과 따로 보관됩니다)
+
 ---
 
 ## 게임 소개
